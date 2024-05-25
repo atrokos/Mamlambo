@@ -5,12 +5,14 @@ from pathlib import Path
 
 from src.Transactions import Transaction
 
+
 class Database:
     def __init__(self):
         """Initialize the Database with empty lists for entries and commits, and an empty deque for free indices."""
         self._entries = []
         self._commits = []
         self._free_indices = deque()
+        self._history = deque(maxlen=3)
 
     def load(self, filename: Path | str, /, delimiter: str = ',') -> None:
         """
@@ -41,9 +43,21 @@ class Database:
             writer.writerows(self._entries)
 
     def commit(self):
-        """Process all pending commits to the database."""
+        """Process all pending commits to the database and store them in history."""
+        commit_data = []
         for commit in self._commits:
-            self._handle_commit(commit)
+            commit_data.append(self._handle_commit(commit))
+
+        self._history.appendleft(commit_data)  # Store the commit data in history
+        self._commits = []  # Clear the commits after processing
+
+    def revert(self):
+        """Revert the last commit."""
+        if not self._history:
+            raise Exception("No commit to revert.")
+        last_commit_data = self._history.popleft()
+        for commit in reversed(last_commit_data):
+            self._undo_commit(commit)
 
     def select(self, filters: list[Callable[[Transaction], bool]]) -> list[Transaction]:
         """
@@ -97,7 +111,7 @@ class Database:
         }
         self._commits.append(commit)
 
-    def _handle_commit(self, commit: dict) -> None:
+    def _handle_commit(self, commit: dict) -> dict:
         """
         Handle a single commit action.
 
@@ -113,12 +127,39 @@ class Database:
 
             case "remove":
                 index = commit["index"]
+                commit["old_value"] = self._entries[index]
                 self._entries[index] = None
                 self._free_indices.append(index)
 
             case "update":
                 index = commit["index"]
+                commit["old_value"] = self._entries[index]
                 self._entries[index] = commit["value"]
+
+        return commit
+
+    def _undo_commit(self, commit: dict) -> None:
+        """Undo a single commit action."""
+        match commit["action"]:
+            case "add":
+                # Find the transaction to remove
+                transaction = commit["value"]
+                index = self._entries.index(transaction)
+                self._entries[index] = None
+                self._free_indices.append(index)
+
+            case "remove":
+                # Restore the removed transaction
+                index = commit["index"]
+                transaction = commit["old_value"]
+                self._entries[index] = transaction
+                self._free_indices.remove(index)
+
+            case "update":
+                # Revert to the previous transaction
+                index = commit["index"]
+                old_transaction = commit["old_value"]
+                self._entries[index] = old_transaction
 
     @staticmethod
     def _check_filters(transaction: Transaction, filters: list[Callable[[Transaction], bool]]) -> bool:
