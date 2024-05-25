@@ -1,9 +1,8 @@
-import sqlite3
 from datetime import date
+from src.Transactions.group import Group
 
 
 class Transaction:
-    converters = [int, date]
     def __init__(self, tid: int, tdate: date, title: str, group, amount, currency, note):
         self._tid = tid
         self._date = tdate
@@ -12,15 +11,6 @@ class Transaction:
         self._amount = amount
         self._currency = currency
         self._note = note
-
-    def __conform__(self, protocol):
-        if protocol is sqlite3.PrepareProtocol:
-            return \
-            f"{self._tid};{self._date};{self._title};{self._group};{self._amount};{self._currency};{self._note}"
-
-    @staticmethod
-    def convert(sql_item):
-
 
     @property
     def date(self):
@@ -45,3 +35,20 @@ class Transaction:
     @property
     def description(self):
         return self._note
+
+    @staticmethod
+    def parse(row):
+        parsers = [
+            int,
+            date,
+            str,
+            Group,
+            float,
+            str,
+            str
+        ]
+
+        parsed = [func(val) for func, val in zip(parsers, row)]
+        return Transaction(*parsed)
+
+
