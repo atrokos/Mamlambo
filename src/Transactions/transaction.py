@@ -3,14 +3,24 @@ from src.Transactions.group import Group
 
 
 class Transaction:
-    def __init__(self, tid: int, tdate: date, title: str, group, amount, currency, note):
-        self._tid = tid
+    def __init__(self, tdate: date, title: str, group, amount, currency, note):
         self._date = tdate
         self._title = title
         self._group = group
         self._amount = amount
         self._currency = currency
         self._note = note
+
+    def __eq__(self, other):
+        if isinstance(other, Transaction):
+            return (self._date == other._date and
+                    self._title == other._title and
+                    self._group == other._group and
+                    self._amount == other._amount and
+                    self._currency == other._currency and
+                    self._note == other._note)
+        return False
+
 
     @property
     def date(self):
@@ -39,8 +49,7 @@ class Transaction:
     @staticmethod
     def parse(row):
         parsers = [
-            int,
-            date,
+            date.fromisoformat,
             str,
             Group,
             float,
@@ -50,5 +59,16 @@ class Transaction:
 
         parsed = [func(val) for func, val in zip(parsers, row)]
         return Transaction(*parsed)
+
+    def dump(self):
+        values = [
+            self._date,
+            self._title,
+            self._group,
+            self._amount,
+            self._currency,
+            self._note
+        ]
+        return [str(val) for val in values]
 
 

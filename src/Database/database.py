@@ -9,10 +9,16 @@ from src.Transactions import Transaction
 class Database:
     def __init__(self):
         """Initialize the Database with empty lists for entries and commits, and an empty deque for free indices."""
-        self._entries = []
+        self._entries: list[Transaction] = []
         self._commits = []
         self._free_indices = deque()
         self._history = deque(maxlen=3)
+
+    def __len__(self):
+        return len(self._entries)
+
+    def __iter__(self):
+        return iter(self._entries)
 
     def load(self, filename: Path | str, /, delimiter: str = ',') -> None:
         """
@@ -25,6 +31,7 @@ class Database:
         self._entries = []
         self._commits = []
         self._free_indices = deque()
+        self._history = deque(maxlen=3)
 
         with open(filename, 'r', encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
@@ -40,7 +47,7 @@ class Database:
         """
         with open(filename, 'w', encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=delimiter)
-            writer.writerows(self._entries)
+            writer.writerows(map(lambda e: e.dump(), self._entries))
 
     def commit(self):
         """Process all pending commits to the database and store them in history."""
@@ -122,6 +129,7 @@ class Database:
                 if len(self._free_indices) > 0:
                     index = self._free_indices.popleft()
                     self._entries[index] = commit["value"]
+                    commit["index"] = len(self._entries) - 1
                 else:
                     self._entries.append(commit["value"])
 
@@ -143,23 +151,27 @@ class Database:
         match commit["action"]:
             case "add":
                 # Find the transaction to remove
-                transaction = commit["value"]
-                index = self._entries.index(transaction)
-                self._entries[index] = None
-                self._free_indices.append(index)
+                index = commit["index"]
+                if index == len(self._entries) - 1:
+                    self._entries.pop()
+                else:
+                    self._entries[index] = None
+                    self._free_indices.append(index)
 
             case "remove":
                 # Restore the removed transaction
                 index = commit["index"]
                 transaction = commit["old_value"]
+                if index >= len(self._entries):
+                    self._entries.append(transaction)
                 self._entries[index] = transaction
                 self._free_indices.remove(index)
 
             case "update":
                 # Revert to the previous transaction
                 index = commit["index"]
-                old_transaction = commit["old_value"]
-                self._entries[index] = old_transaction
+                transaction = commit["old_value"]
+                self._entries[index] = transaction
 
     @staticmethod
     def _check_filters(transaction: Transaction, filters: list[Callable[[Transaction], bool]]) -> bool:
