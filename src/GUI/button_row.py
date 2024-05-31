@@ -15,7 +15,7 @@ class ButtonRow(tk.Frame):
     def add_button(self, label="", icon=None, command=None, side: Literal["left", "right", "top", "bottom"] = "left"):
         button = ttk.Button(self, text=label, image=icon, command=command)
         button.pack(side=side)
-        self._buttons[label] = button
+        self._buttons[label.lower()] = button
 
     def add_separator(self, side: Literal["left", "right", "top", "bottom"] = "left"):
         ttk.Separator(self, orient=tk.VERTICAL).pack(side=side, expand=True, fill=tk.BOTH, padx=5)
@@ -23,3 +23,11 @@ class ButtonRow(tk.Frame):
     def _next_column(self):
         self._last_column += 1
         return self._last_column
+
+    def enable_all(self):
+        for button in self._buttons.values():
+            button["state"] = "normal"
+
+    def disable_all(self):
+        for button in self._buttons.values():
+            button["state"] = "disabled"

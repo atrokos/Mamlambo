@@ -66,6 +66,12 @@ class Database:
         for commit in reversed(last_commit_data):
             self._undo_commit(commit)
 
+    def all_commited(self):
+        return len(self._commits) == 0
+
+    def can_revert(self):
+        return len(self._commits) > 0
+
     def select(self, filters: list[Callable[[Transaction], bool]]) -> list[Transaction]:
         """
         Select transactions that match all the given filters.
