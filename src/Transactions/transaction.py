@@ -21,7 +21,6 @@ class Transaction:
                     self._note == other._note)
         return False
 
-
     @property
     def date(self):
         return self._date
