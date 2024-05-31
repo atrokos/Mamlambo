@@ -7,12 +7,12 @@ from src.Transactions import Transaction
 class TransactionTreeView(ttk.Treeview):
     def __init__(self, parent):
         super().__init__(parent, show="headings")
-        self["columns"] = ("Date", "Title", "Group", "Amount", "Currency", "Description")
+        self["columns"] = ("Date", "Title", "Tags", "Amount", "Currency", "Description")
 
         self.heading("#1", text="Date")
         self.column("#1", width=80)
         self.heading("#2", text="Title")
-        self.heading("#3", text="Group")
+        self.heading("#3", text="Tags")
         self.heading("#4", text="Amount")
         self.heading("#5", text="Currency")
         self.column("#5", width=60)
@@ -24,6 +24,9 @@ class TransactionTreeView(ttk.Treeview):
 
         # Add data to the tree view
         for transaction in transactions:
+            if transaction is None:
+                continue
+
             self.insert("", "end", values=(
                 transaction.date,
                 transaction.title,
