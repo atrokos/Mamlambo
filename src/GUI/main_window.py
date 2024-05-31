@@ -3,6 +3,7 @@ from tkinter import ttk
 
 from src.GUI.about_window import AboutWindow
 from src.GUI.button_row import ButtonRow
+from src.GUI.transaction_view import TransactionTreeView
 
 
 class MainWindow(tk.Tk):
@@ -10,10 +11,14 @@ class MainWindow(tk.Tk):
         super().__init__()
 
         self.title("Mamlambo")  # Set the window title
-        self.geometry("800x600")
-        self.resizable(False, False)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.ribbon = None
+        self.treeview = None
+
         self.setup_menu()
         self.setup_ribbon()
+        self.setup_transaction_view()
 
     def setup_menu(self):
         menubar = tk.Menu(self)
@@ -21,6 +26,8 @@ class MainWindow(tk.Tk):
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label='New', command=self.new_session)
         file_menu.add_command(label="Open", command=self.open_session)
+        file_menu.add_command(label="Save", command=self.open_session)
+        file_menu.add_command(label="Save as", command=self.open_session)
         file_menu.add_command(label='Exit', command=self.destroy)
 
         options_menu = tk.Menu(menubar, tearoff=0)
@@ -45,15 +52,26 @@ class MainWindow(tk.Tk):
         AboutWindow(self, "0.1.0 alpha")
 
     def setup_ribbon(self):
-        row = ButtonRow(self)
-        row.grid(row=0, column=0, sticky='nsew')
+        self.ribbon  = ButtonRow(self)
+        self.ribbon.grid(row=0, column=0, sticky='nsw')
 
-        row.add_button("Add", command=self.nothing)
-        row.add_button("Edit", command=self.nothing)
-        row.add_button("Remove", command=self.nothing)
+        self.ribbon.add_button("Add", command=self.nothing)
+        self.ribbon.add_button("Edit", command=self.nothing)
+        self.ribbon.add_button("Remove", command=self.nothing)
+        self.ribbon.add_button("Filter", command=self.nothing)
+
+        row2 = ButtonRow(self)
+        row2.grid(row=0, column=1, sticky="nse")
+
+        row2.add_button("Revert", command=self.nothing)
+        row2.add_button("Commit", command=self.nothing)
 
     def nothing(self, event=None):
         pass
+
+    def setup_transaction_view(self):
+        self.treeview = TransactionTreeView(self)
+        self.treeview.grid(row=1, column=0, columnspan=10, pady=(5, 0), sticky='nsew')
 
 
 if __name__ == '__main__':
