@@ -3,10 +3,14 @@ from tkinter import ttk
 import tkinter.messagebox as mb
 
 
+# TODO Check that values are valid
+# TODO Correctly parse value and date
+
 class AddTransactionWindow(tk.Toplevel):
     entry_names = [
         "Date", "Title", "Group", "Amount", "Description"
     ]
+
     def __init__(self, master, templates=None):
         super().__init__(master)
 
