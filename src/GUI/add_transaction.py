@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.messagebox as mb
 
+from src.Transactions import Transaction
+
 
 # TODO Check that values are valid
 # TODO Correctly parse value and date
@@ -15,6 +17,7 @@ class AddTransactionWindow(tk.Toplevel):
         super().__init__(master)
 
         self.title('Add Transaction')
+        self.resizable(True, False)
         self.columnconfigure(1, weight=1)
         self.values = dict()
         self.templates = templates
@@ -86,6 +89,22 @@ class AddTransactionWindow(tk.Toplevel):
 
         for entry, value in self.templates[template_name].items():
             self.values[entry].set(value)
+
+    def get_transaction(self):
+        if self.values is None:
+            return None
+
+        # TODO nicer way
+        amount = self.values["Amount"].get().split(" ")
+        data = [
+            self.values["Date"].get(),
+            self.values["Title"].get(),
+            self.values["Group"].get(),
+            amount[0],
+            amount[1],
+            self.values["Description"].get()
+        ]
+        return Transaction.parse(data)
 
     def next_row(self):
         return self.grid_size()[1]

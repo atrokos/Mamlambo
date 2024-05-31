@@ -70,7 +70,7 @@ class Database:
         return len(self._commits) == 0
 
     def can_revert(self):
-        return len(self._commits) > 0
+        return len(self._history) > 0
 
     def select(self, filters: list[Callable[[Transaction], bool]]) -> list[Transaction]:
         """
