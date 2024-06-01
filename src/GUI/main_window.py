@@ -5,7 +5,7 @@ import tkinter.messagebox as mb
 
 from src.Database.database_wrapper import DatabaseView
 from src.GUI.about_window import AboutWindow
-from src.GUI.add_transaction import AddTransactionWindow
+from src.GUI.add_transaction import TransactionWindow
 from src.GUI.button_row import ButtonRow
 from src.GUI.transaction_view import TransactionTreeView, TransactionPages
 from src.Transactions import Transaction
@@ -21,7 +21,7 @@ class MainWindow(tk.Tk):
         self.resizable(True, False)
         self._left_ribbon = None
         self._right_ribbon = None
-        self.trns_pages = None
+        self.trns_pages: TransactionPages | None = None
         self.database = None
         self.templates = {
             "Test": {
@@ -67,9 +67,9 @@ class MainWindow(tk.Tk):
                 return
 
         self.database = DatabaseView()
+        self.database.subscribe(self.update_buttons)
         self.trns_pages.set_database(self.database)
         self._left_ribbon.enable_all()
-        self.update_buttons()
 
     def open_session(self):
         if self.database is not None and not self.database.all_commited():
@@ -78,11 +78,13 @@ class MainWindow(tk.Tk):
                 return
 
         filename = fd.askopenfilename()
+        if filename == "":
+            return
         self.database = DatabaseView()
-        self.database.load(filename)
+        self.database.subscribe(self.update_buttons)
         self.trns_pages.set_database(self.database)
+        self.database.load(filename)
         self._left_ribbon.enable_all()
-        self.update_buttons()
 
     def save_session(self):
         if self.database is None:
@@ -95,6 +97,8 @@ class MainWindow(tk.Tk):
                 return
 
         filename = fd.asksaveasfilename()
+        if filename == "":
+            return
         self.database.dump(filename)
 
     def display_about(self):
@@ -105,8 +109,8 @@ class MainWindow(tk.Tk):
         self._left_ribbon.grid(row=0, column=0, sticky='nsw')
 
         self._left_ribbon.add_button("Add", command=self.add_trn_comm)
-        self._left_ribbon.add_button("Edit", command=self.nothing)
-        self._left_ribbon.add_button("Remove", command=self.nothing)
+        self._left_ribbon.add_button("Edit", command=self.edit_trn_comm)
+        self._left_ribbon.add_button("Remove", command=self.remove_trn_comm)
         self._left_ribbon.add_button("Filter", command=self.nothing)
         self._left_ribbon.disable_all()
 
@@ -120,7 +124,7 @@ class MainWindow(tk.Tk):
         pass
 
     def add_trn_comm(self):
-        transaction_window = AddTransactionWindow(self, templates=self.templates)
+        transaction_window = TransactionWindow(self, templates=self.templates)
         transaction_window.grab_set()
         transaction_window.wait_window()
 
@@ -128,12 +132,26 @@ class MainWindow(tk.Tk):
             return
 
         self.database.add(transaction_window.get_transaction())
-        self.update_buttons()
+
+    def edit_trn_comm(self):
+        selected = self.trns_pages.get_selection()
+        for index in selected:
+            trn_dict = self.database[index].to_dict()
+            edit_window = TransactionWindow(self, self.templates, trn_dict)
+            edit_window.grab_set()
+            edit_window.wait_window()
+
+            if edit_window.values is None:
+                return
+            self.database.edit(index, edit_window.get_transaction())
+
+    def remove_trn_comm(self):
+        selected = self.trns_pages.get_selection()
+        for index in selected:
+            self.database.remove(index)
 
     def commit_comm(self):
         self.database.commit()
-        self.trns_pages.populate_tree(self.database.get_slice(0))
-        self.update_buttons()
 
     def setup_transaction_view(self):
         self.trns_pages = TransactionPages(self, None)

@@ -3,6 +3,10 @@ from src.Transactions.group import Group
 
 
 class Transaction:
+    value_names = [
+        "Date", "Title", "Group", "Amount", "Description"
+    ]
+
     def __init__(self, tdate: date, title: str, group, amount, currency, note):
         self._date = tdate
         self._title = title
@@ -20,6 +24,16 @@ class Transaction:
                     self._currency == other._currency and
                     self._note == other._note)
         return False
+
+    def to_dict(self) -> dict[str, str]:
+        result = dict()
+        values = self.dump()
+        result["Date"] = values[0]
+        result["Title"] = values[1]
+        result["Group"] = values[2]
+        result["Amount"] = values[3] + " " + values[4]
+        result["Description"] = values[5]
+        return result
 
     @property
     def date(self):

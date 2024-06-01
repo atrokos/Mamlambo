@@ -8,12 +8,8 @@ from src.Transactions import Transaction
 # TODO Check that values are valid
 # TODO Correctly parse value and date
 
-class AddTransactionWindow(tk.Toplevel):
-    entry_names = [
-        "Date", "Title", "Group", "Amount", "Description"
-    ]
-
-    def __init__(self, master, templates=None):
+class TransactionWindow(tk.Toplevel):
+    def __init__(self, master, templates=None, defaults: dict | None = None):
         super().__init__(master)
 
         self.title('Add Transaction')
@@ -25,30 +21,16 @@ class AddTransactionWindow(tk.Toplevel):
 
         self.setup()
 
+        if defaults is not None:
+            self.title("Edit Transaction")
+            for entry, value in defaults.items():
+                self.values[entry].set(value)
+
     def setup(self):
-        template_names = sorted(self.templates.keys())
-        box_row = self.next_row()
-        ttk.Label(self, text="Template").grid(row=box_row, column=0, sticky="w", pady=(0, 8))
-        self.template_sel = ttk.Combobox(self, values=template_names, state='readonly')
-        self.template_sel.bind("<<ComboboxSelected>>", self.update_template)
-        self.template_sel.grid(row=box_row, column=1, sticky='ew', pady=(0, 8))
-        ttk.Button(self, text="Delete", command=self.delete_template
-                   ).grid(row=box_row, column=2, sticky='w', pady=(0, 8))
-
-        for entry in self.entry_names:
-            self.values[entry] = tk.StringVar()
-            row = self.next_row()
-            ttk.Label(self, text=entry).grid(row=row, column=0, sticky="w", pady=(0, 8))
-            ttk.Entry(self, textvariable=self.values[entry]
-                      ).grid(row=row, column=1, sticky="ew", pady=(0, 8), columnspan=2)
-
-        button_row = self.next_row()
-        ttk.Button(self, text="Cancel", command=self.cancel_event
-                   ).grid(row=button_row, column=0, sticky="w", pady=(10, 5), padx=5)
-        ttk.Button(self, text="Save as Template", command=self.save_template_event
-                   ).grid(row=button_row, column=1, sticky="w", pady=(10, 5), padx=5)
-        ttk.Button(self, text="Confirm", command=self.confirm_event
-                   ).grid(row=button_row, column=2, sticky="e", pady=(10, 5), padx=5)
+        self._setup_template_sel()
+        self._setup_entries()
+        self._setup_buttons()
+        self.protocol("WM_DELETE_WINDOW", self.cancel_event)
 
     def delete_template(self):
         confirmation = mb.askyesno(title="Delete Template", message="Are you sure you want to delete this template?")
@@ -90,6 +72,15 @@ class AddTransactionWindow(tk.Toplevel):
         for entry, value in self.templates[template_name].items():
             self.values[entry].set(value)
 
+    def _setup_buttons(self):
+        button_row = self.next_row()
+        ttk.Button(self, text="Cancel", command=self.cancel_event
+                   ).grid(row=button_row, column=0, sticky="w", pady=(10, 5), padx=5)
+        ttk.Button(self, text="Save as Template", command=self.save_template_event
+                   ).grid(row=button_row, column=1, sticky="w", pady=(10, 5), padx=5)
+        ttk.Button(self, text="Confirm", command=self.confirm_event
+                   ).grid(row=button_row, column=2, sticky="e", pady=(10, 5), padx=5)
+
     def get_transaction(self):
         if self.values is None:
             return None
@@ -108,6 +99,24 @@ class AddTransactionWindow(tk.Toplevel):
 
     def next_row(self):
         return self.grid_size()[1]
+
+    def _setup_template_sel(self):
+        template_names = sorted(self.templates.keys())
+        box_row = self.next_row()
+        ttk.Label(self, text="Template").grid(row=box_row, column=0, sticky="w", pady=(0, 8))
+        self.template_sel = ttk.Combobox(self, values=template_names, state='readonly')
+        self.template_sel.bind("<<ComboboxSelected>>", self.update_template)
+        self.template_sel.grid(row=box_row, column=1, sticky='ew', pady=(0, 8))
+        ttk.Button(self, text="Delete", command=self.delete_template
+                   ).grid(row=box_row, column=2, sticky='w', pady=(0, 8))
+
+    def _setup_entries(self):
+        for entry in Transaction.value_names:
+            self.values[entry] = tk.StringVar()
+            row = self.next_row()
+            ttk.Label(self, text=entry).grid(row=row, column=0, sticky="w", pady=(0, 8), padx=(5, 0))
+            ttk.Entry(self, textvariable=self.values[entry]
+                      ).grid(row=row, column=1, columnspan=2, sticky="ew", pady=(0, 8), padx=(0, 10))
 
 
 class EntryWindow(tk.Toplevel):
@@ -154,7 +163,7 @@ if __name__ == '__main__':
             "Description": "Subscriptions for all services"
         }
     }
-    app = AddTransactionWindow(root, templates)
+    app = TransactionWindow(root, templates)
     app.grab_set()
     root.mainloop()
 

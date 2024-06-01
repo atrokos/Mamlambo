@@ -1,8 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 
-from pygments.lexers import q
-
 from src.Database.database_wrapper import DatabaseView
 from src.Transactions import Transaction
 
@@ -21,7 +19,8 @@ class TransactionTreeView(ttk.Treeview):
         self.column("#5", width=60)
         self.heading("#6", text="Description")
 
-    def populate_tree(self, transactions):
+    def populate_tree(self, transactions: list[Transaction]):
+        counter = 0
         # Clear existing items
         self.delete(*self.get_children())
 
@@ -30,7 +29,7 @@ class TransactionTreeView(ttk.Treeview):
             if transaction is None:
                 continue
 
-            self.insert("", "end", values=(
+            self.insert("", "end", id=counter, values=(
                 transaction.date,
                 transaction.title,
                 transaction.group,
@@ -38,6 +37,8 @@ class TransactionTreeView(ttk.Treeview):
                 transaction.currency,
                 transaction.description
             ))
+
+            counter += 1
 
 
 class TransactionPages(tk.Frame):
@@ -63,35 +64,62 @@ class TransactionPages(tk.Frame):
 
     def set_database(self, database):
         self.database = database
+        self.database.subscribe(self.refresh)
+
+    def set_items_per_page(self, items: int):
+        if items <= 0:
+            return
+
+        self.items_per_page = items
         self.refresh()
 
     def refresh(self):
         if self.database is None:
             return
 
-        self.treeview.populate_tree(self.database.get_slice(self.curr_page))
+        self.treeview.populate_tree(self._get_page(self.curr_page))
 
     def _setup_treeview(self):
         self.treeview = TransactionTreeView(self)
         self.treeview.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
     def _setup_buttons(self):
-        self.prev_btn = ttk.Button(self, text="Previous")
+        self.prev_btn = ttk.Button(self, text="Previous", command=self._prev_page)
         self.prev_btn.grid(row=1, column=0, padx=5, pady=5, sticky="nsw")
-        self.next_btn = ttk.Button(self, text="Next")
+        self.next_btn = ttk.Button(self, text="Next", command=self._next_page)
         self.next_btn.grid(row=1, column=1, padx=5, pady=5, sticky="nse")
 
     def _next_page(self):
-        # TODO switches to the next page
-        pass
+        self.curr_page += 1
+        self.treeview.populate_tree(self._get_page(self.curr_page))
+    
+    def _get_page(self, page_number):
+        """Returns only a given slice of data."""
+        start = page_number * self.items_per_page
+        end = start + self.items_per_page
+
+        if start == 0:
+            self.prev_btn["state"] = "disabled"
+        else:
+            self.prev_btn["state"] = "normal"
+
+        if end >= len(self.database):
+            self.next_btn["state"] = "disabled"
+            end = len(self.database)
+        else:
+            self.next_btn["state"] = "normal"
+
+        return self.database[start:end]
 
     def _prev_page(self):
-        # TODO switches to the previous page
-        pass
+        if self.curr_page > 0:
+            self.curr_page -= 1
+
+        self.treeview.populate_tree(self._get_page(self.curr_page))
 
     def get_selection(self):
-        # TODO returns IDs of the selected items
-        pass
+        offset = self.curr_page * self.items_per_page
+        return [offset + int(x) for x in self.treeview.selection()]
 
 
 if __name__ == "__main__":
