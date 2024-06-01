@@ -18,6 +18,7 @@ class MainWindow(tk.Tk):
         self.title("Mamlambo")  # Set the window title
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
+        self.resizable(True, False)
         self._left_ribbon = None
         self._right_ribbon = None
         self.trns_pages = None

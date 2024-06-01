@@ -47,6 +47,11 @@ class TransactionPages(tk.Frame):
     """
     def __init__(self, master, database):
         super().__init__(master)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
+
         self.database: DatabaseView = database
         self.treeview = None
         self.next_btn = None
