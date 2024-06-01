@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
 
+from pygments.lexers import q
+
+from src.Database.database_wrapper import DatabaseView
 from src.Transactions import Transaction
 
 
@@ -35,6 +38,55 @@ class TransactionTreeView(ttk.Treeview):
                 transaction.currency,
                 transaction.description
             ))
+
+
+class TransactionPages(tk.Frame):
+    """
+    Contains all logic for rendering the Transactions table, along with
+    page switching and accessing the database for rendered data.
+    """
+    def __init__(self, master, database):
+        super().__init__(master)
+        self.database: DatabaseView = database
+        self.treeview = None
+        self.next_btn = None
+        self.prev_btn = None
+        self.curr_page = 0
+        self.items_per_page = 10
+        self._setup_treeview()
+        self._setup_buttons()
+
+    def set_database(self, database):
+        self.database = database
+        self.refresh()
+
+    def refresh(self):
+        if self.database is None:
+            return
+
+        self.treeview.populate_tree(self.database.get_slice(self.curr_page))
+
+    def _setup_treeview(self):
+        self.treeview = TransactionTreeView(self)
+        self.treeview.grid(row=0, column=0, columnspan=2, sticky="nsew")
+
+    def _setup_buttons(self):
+        self.prev_btn = ttk.Button(self, text="Previous")
+        self.prev_btn.grid(row=1, column=0, padx=5, pady=5, sticky="nsw")
+        self.next_btn = ttk.Button(self, text="Next")
+        self.next_btn.grid(row=1, column=1, padx=5, pady=5, sticky="nse")
+
+    def _next_page(self):
+        # TODO switches to the next page
+        pass
+
+    def _prev_page(self):
+        # TODO switches to the previous page
+        pass
+
+    def get_selection(self):
+        # TODO returns IDs of the selected items
+        pass
 
 
 if __name__ == "__main__":

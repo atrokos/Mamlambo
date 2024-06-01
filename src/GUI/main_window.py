@@ -7,7 +7,7 @@ from src.Database.database_wrapper import DatabaseView
 from src.GUI.about_window import AboutWindow
 from src.GUI.add_transaction import AddTransactionWindow
 from src.GUI.button_row import ButtonRow
-from src.GUI.transaction_view import TransactionTreeView
+from src.GUI.transaction_view import TransactionTreeView, TransactionPages
 from src.Transactions import Transaction
 
 
@@ -20,7 +20,7 @@ class MainWindow(tk.Tk):
         self.columnconfigure(1, weight=1)
         self._left_ribbon = None
         self._right_ribbon = None
-        self.treeview = None
+        self.trns_pages = None
         self.database = None
         self.templates = {
             "Test": {
@@ -66,6 +66,7 @@ class MainWindow(tk.Tk):
                 return
 
         self.database = DatabaseView()
+        self.trns_pages.set_database(self.database)
         self._left_ribbon.enable_all()
         self.update_buttons()
 
@@ -78,7 +79,7 @@ class MainWindow(tk.Tk):
         filename = fd.askopenfilename()
         self.database = DatabaseView()
         self.database.load(filename)
-        self.treeview.populate_tree(self.database.get_slice(0))
+        self.trns_pages.set_database(self.database)
         self._left_ribbon.enable_all()
         self.update_buttons()
 
@@ -130,12 +131,12 @@ class MainWindow(tk.Tk):
 
     def commit_comm(self):
         self.database.commit()
-        self.treeview.populate_tree(self.database.get_slice(0))
+        self.trns_pages.populate_tree(self.database.get_slice(0))
         self.update_buttons()
 
     def setup_transaction_view(self):
-        self.treeview = TransactionTreeView(self)
-        self.treeview.grid(row=1, column=0, columnspan=10, pady=(5, 0), sticky='nsew')
+        self.trns_pages = TransactionPages(self, None)
+        self.trns_pages.grid(row=1, column=0, columnspan=2, pady=(5, 0), sticky='nsew')
 
     def update_buttons(self):
         if self.database is None:
