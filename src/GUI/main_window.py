@@ -1,4 +1,5 @@
 import tkinter as tk
+from pathlib import Path
 from tkinter import filedialog as fd
 import tkinter.messagebox as mb
 
@@ -45,7 +46,6 @@ class MainWindow(tk.Tk):
         file_menu.add_command(label='New', command=self.new_session)
         file_menu.add_command(label="Open", command=self.open_session)
         file_menu.add_command(label="Save", command=self.save_session)
-        file_menu.add_command(label="Save as", command=self.open_session)
         file_menu.add_command(label='Exit', command=self.destroy)
 
         options_menu = tk.Menu(menubar, tearoff=0)
@@ -61,21 +61,31 @@ class MainWindow(tk.Tk):
         self.config(menu=menubar)  # Set the menubar for the main window
 
     def new_session(self):
-        if self.database is not None and not self.database.all_commited():
-            answer = mb.askyesno("Confirmation", "Not all changes were commited, do you want to continue?")
-            if not answer:
-                return
+        answer = self._check_saved_commited()
+        if not answer:
+            return
 
         self.database = DatabaseView()
         self.database.subscribe(self.update_buttons)
         self.trns_pages.set_database(self.database)
         self._left_ribbon.enable_all()
 
+    def _check_saved_commited(self) -> bool:
+        if self.database is not None:
+            if not self.database.all_commited():
+                answer = mb.askyesno("Confirmation", "Not all changes were commited, all uncommited data will be "
+                                                     "lost.\nContinue?")
+                return answer
+            if not self.database.is_saved():
+                answer = mb.askyesno("Confirmation", "This session was not saved, all unsaved data will be lost.\n" +
+                                     "Continue?")
+                return answer
+        return True
+
     def open_session(self):
-        if self.database is not None and not self.database.all_commited():
-            answer = mb.askyesno("Confirmation", "Not all changes were commited, do you want to continue?")
-            if not answer:
-                return
+        answer = self._check_saved_commited()
+        if not answer:
+            return
 
         filename = fd.askopenfilename()
         if filename == "":
@@ -96,13 +106,19 @@ class MainWindow(tk.Tk):
             if not answer:
                 return
 
-        filename = fd.asksaveasfilename()
+        filename = fd.asksaveasfilename(confirmoverwrite=True,
+                                        defaultextension=".*",
+                                        filetypes=[("Comma Separated Values", "*.csv"),
+                                                   ("JavaScript Object Notation", "*.json")])
         if filename == "":
             return
-        self.database.dump(filename)
+        try:
+            self.database.dump(Path(filename))
+        except ValueError as e:
+            mb.showerror("Unsupported file type", str(e))
 
     def display_about(self):
-        AboutWindow(self, "0.1.0 alpha")
+        AboutWindow(self, "0.1.5 alpha")
 
     def setup_ribbon(self):
         self._left_ribbon = ButtonRow(self)
@@ -117,7 +133,7 @@ class MainWindow(tk.Tk):
         self._right_ribbon = ButtonRow(self)
         self._right_ribbon.grid(row=0, column=1, sticky="nse")
 
-        self._right_ribbon.add_button("Revert", command=self.nothing)
+        self._right_ribbon.add_button("Revert", command=self.revert_comm)
         self._right_ribbon.add_button("Commit", command=self.commit_comm)
 
     def nothing(self, event=None):
@@ -153,6 +169,9 @@ class MainWindow(tk.Tk):
     def commit_comm(self):
         self.database.commit()
 
+    def revert_comm(self):
+        self.database.revert()
+
     def setup_transaction_view(self):
         self.trns_pages = TransactionPages(self, None)
         self.trns_pages.grid(row=1, column=0, columnspan=2, pady=(5, 0), sticky='nsew')
@@ -171,8 +190,6 @@ class MainWindow(tk.Tk):
             self._right_ribbon["commit"]["state"] = "normal"
         else:
             self._right_ribbon["commit"]["state"] = "disable"
-
-
 
 
 if __name__ == '__main__':

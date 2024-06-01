@@ -40,16 +40,29 @@ class Database:
             for row in reader:
                 self._entries.append(Transaction.parse(row))
 
-    def dump(self, filename: Path | str, /, delimiter: str = ',') -> None:
+    def dump(self, filename: Path, /, delimiter: str = ',') -> None:
         """
         Dump the database transactions into a CSV file.
 
         :param filename: The path to the CSV file to write to.
         :param delimiter: The delimiter to use in the CSV file.
         """
-        with open(filename, 'w', encoding="utf-8") as f:
-            writer = csv.writer(f, delimiter=delimiter)
-            writer.writerows(map(lambda e: e.dump(), self._entries))
+        filetype = "csv"
+        try:
+            filetype = filename.name.split(".")[1].lower()
+        except:
+            # If no filetype seems to be supplied, default to csv
+            pass
+
+        if filetype == "csv":
+            with open(filename, 'w', encoding="utf-8") as f:
+                writer = csv.writer(f, delimiter=delimiter)
+                writer.writerows(map(lambda e: e.dump(), self._entries))
+        elif filetype == "json":
+            # TODO
+            pass
+        else:
+            raise ValueError(f"Unsupported file type: {filetype}")
 
     def commit(self):
         """Process all pending commits to the database and store them in history."""

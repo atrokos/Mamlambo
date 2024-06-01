@@ -16,8 +16,8 @@ class DatabaseView(Database):
     """
     Creates a view over a database that enables sorting its entries using arbitrary functions.
     The advantage of this implementation over using raw database is that the order of
-    entries is never changed when sorting. Also, no copies of the entries are created,
-    unless retrieving the slices.
+    entries in the actual database is never changed when sorting. Also, no copies of the
+    entries are created, unless retrieving the slices.
 
     It also employs reactive programming, as classes that depend on the database's data
     can add their own callback that is called every time the database changes state.
@@ -27,6 +27,7 @@ class DatabaseView(Database):
         self._view = []
         self._subscribers = []
         self._prev_action = Action.NONE
+        self._saved = False
 
     def sort_by(self, getter, reverse=False):
         self._view = sorted(
@@ -35,19 +36,26 @@ class DatabaseView(Database):
             reverse=reverse
         )
 
+    def dump(self, filename: Path, /, delimiter: str = ',') -> None:
+        super().dump(filename, delimiter)
+        self._saved = True
+
     def load(self, filename: Path | str, **kwargs):
         super().load(filename, **kwargs)
         self._prev_action = Action.LOAD
+        self._saved = True
         self._call_all()
 
     def commit(self):
         super().commit()
         self._prev_action = Action.STATE_CHANGE
+        self._saved = False
         self._call_all()
 
     def revert(self):
         super().revert()
         self._prev_action = Action.STATE_CHANGE
+        self._saved = False
         self._call_all()
 
     def add(self, transaction):
@@ -71,6 +79,7 @@ class DatabaseView(Database):
     def subscribe(self, callback: Callable[[], None]):
         if callback not in self._subscribers:
             self._subscribers.append(callback)
+            callback()  # To let the new subscriber know the current state
 
     def _call_all(self):
         for callback in self._subscribers:
@@ -78,6 +87,9 @@ class DatabaseView(Database):
 
     def default_view(self):
         self._view = []
+
+    def is_saved(self):
+        return self._saved
 
     def __getitem__(self, item):
         if len(self._view) == 0:

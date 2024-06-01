@@ -89,6 +89,10 @@ class TransactionPages(tk.Frame):
         self.next_btn = ttk.Button(self, text="Next", command=self._next_page)
         self.next_btn.grid(row=1, column=1, padx=5, pady=5, sticky="nse")
 
+        # Set both buttons to `disabled`
+        self.prev_btn["state"] = "disabled"
+        self.next_btn["state"] = "disabled"
+
     def _next_page(self):
         self.curr_page += 1
         self.treeview.populate_tree(self._get_page(self.curr_page))
