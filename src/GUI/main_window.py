@@ -34,6 +34,7 @@ class MainWindow(tk.Tk):
                 "Description": "Test"
             }
         }
+        self.protocol("WM_DELETE_WINDOW", self._exit_app)
 
         self.setup_menu()
         self.setup_ribbon()
@@ -47,7 +48,7 @@ class MainWindow(tk.Tk):
         file_menu.add_command(label='New', command=self.new_session)
         file_menu.add_command(label="Open", command=self.open_session)
         file_menu.add_command(label="Save", command=self.save_session)
-        file_menu.add_command(label='Exit without saving', command=self.destroy)
+        file_menu.add_command(label='Exit', command=self._exit_app)
 
         tools_menu = tk.Menu(menubar, tearoff=0)
         tools_menu.add_command(label="Convert currency")
@@ -99,8 +100,13 @@ class MainWindow(tk.Tk):
         self.database = DatabaseView(lambda x: x.date, True)
         self.database.subscribe(self.update_buttons)
         self.trns_pages.set_database(self.database)
-        self.database.load(filename, defaultorder=lambda x: x.date)
+        self.database.load(filename)
         self._left_ribbon.enable_all()
+
+    def _exit_app(self):
+        answer = self._check_saved_commited()
+        if answer:
+            self.destroy()
 
     def save_session(self):
         if self.database is None:

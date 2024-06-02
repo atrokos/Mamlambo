@@ -200,7 +200,7 @@ class Database:
                     l += 1
             r += 1
 
-        if self._entries[l] is not None:
+        if l < len(self._entries) and self._entries[l] is not None:
             l += 1
 
         while l < len(self._entries):

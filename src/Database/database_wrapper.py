@@ -72,13 +72,11 @@ class DatabaseView(Database):
         super().dump(filename, delimiter)
         self._saved = True
 
-    def load(self, filename: Path | str, /, delimiter=",", defaultorder=None):
+    def load(self, filename: Path | str, /, delimiter=","):
         super().load(filename, delimiter)
         self._prev_action = Action.LOAD
         self._saved = True
-        if defaultorder is not None:
-            self.sort_by(defaultorder)
-        self._call_all()
+        self.sort_by()
 
     def commit(self):
         super().commit()

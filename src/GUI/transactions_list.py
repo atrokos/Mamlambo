@@ -115,6 +115,10 @@ class TransactionPages(tk.Frame):
     def _get_page(self, page_number):
         """Returns only a given slice of data."""
         start = page_number * self.items_per_page
+        if start > len(self.database):
+            self.curr_page = 0
+            start = 0
+
         end = start + self.items_per_page
 
         if start == 0:
