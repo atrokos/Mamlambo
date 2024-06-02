@@ -35,6 +35,8 @@ class DatabaseView(Database):
             key=lambda i: getter(self._entries[i]),
             reverse=reverse
         )
+        self._prev_action = Action.STATE_CHANGE
+        self._call_all()
 
     def dump(self, filename: Path, /, delimiter: str = ',') -> None:
         super().dump(filename, delimiter)
@@ -65,12 +67,16 @@ class DatabaseView(Database):
             self._call_all()
 
     def remove(self, index):
+        if len(self._view) > 0:
+            index = self._view[index]
         super().remove(index)
         if self._prev_action != Action.PUSH:
             self._prev_action = Action.PUSH
             self._call_all()
 
     def edit(self, index, transaction):
+        if len(self._view) > 0:
+            index = self._view[index]
         super().edit(index, transaction)
         if self._prev_action != Action.PUSH:
             self._prev_action = Action.PUSH

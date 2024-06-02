@@ -4,7 +4,7 @@ from src.Transactions.group import Group
 
 class Transaction:
     value_names = [
-        "Date", "Title", "Group", "Amount", "Description"
+        "Date", "Title", "Group", "Amount", "Currency", "Description"
     ]
 
     def __init__(self, tdate: date, title: str, group, amount, currency, note):
@@ -26,13 +26,8 @@ class Transaction:
         return False
 
     def to_dict(self) -> dict[str, str]:
-        result = dict()
         values = self.dump()
-        result["Date"] = values[0]
-        result["Title"] = values[1]
-        result["Group"] = values[2]
-        result["Amount"] = values[3] + " " + values[4]
-        result["Description"] = values[5]
+        result = {key: value for key, value in zip(self.value_names, values)}
         return result
 
     @property
@@ -60,16 +55,38 @@ class Transaction:
         return self._note
 
     @staticmethod
+    def __parse_date(d: str):
+        try:
+            return date.fromisoformat(d)
+        except:
+            raise ValueError("Incorrect date format. The format is\nYYYY-MM-DD")
+
+    @staticmethod
+    def __parse_value(value: str):
+        try:
+            return float(value)
+        except:
+            raise ValueError("Incorrect amount format. Possible cause: using comma instead of a dot.")
+
+    @staticmethod
+    def __parse_iso(code: str):
+        if len(code) != 3 or not code.isupper():
+            raise ValueError("Expected the currency's ISO 4217 code.")
+        return code
+
+    @staticmethod
     def parse(row):
         parsers = [
-            date.fromisoformat,
+            Transaction.__parse_date,
             str,
             Group,
-            float,
-            str,
+            Transaction.__parse_value,
+            Transaction.__parse_iso,
             str
         ]
 
+        if len(row) < len(parsers):
+            raise ValueError("Not enough data.")
         parsed = [func(val) for func, val in zip(parsers, row)]
         return Transaction(*parsed)
 

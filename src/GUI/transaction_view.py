@@ -8,14 +8,14 @@ from src.Transactions import Transaction
 class TransactionTreeView(ttk.Treeview):
     def __init__(self, parent):
         super().__init__(parent, show="headings")
-        self["columns"] = ("Date", "Title", "Tags", "Amount", "Currency", "Description")
+        self["columns"] = ("Date", "Title", "Group", "Amount", "Currency", "Description")
 
-        self.heading("#1", text="Date")
+        self.heading("#1", text="Date", command=parent.sort_date)
         self.column("#1", width=80)
-        self.heading("#2", text="Title")
-        self.heading("#3", text="Tags")
-        self.heading("#4", text="Amount")
-        self.heading("#5", text="Currency")
+        self.heading("#2", text="Title", command=parent.sort_title)
+        self.heading("#3", text="Group", command=parent.sort_group)
+        self.heading("#4", text="Amount", command=parent.sort_amount)
+        self.heading("#5", text="Currency", command=parent.sort_curr)
         self.column("#5", width=60)
         self.heading("#6", text="Description")
 
@@ -124,6 +124,21 @@ class TransactionPages(tk.Frame):
     def get_selection(self):
         offset = self.curr_page * self.items_per_page
         return [offset + int(x) for x in self.treeview.selection()]
+
+    def sort_date(self):
+        self.database.sort_by(lambda x: x.date)
+
+    def sort_title(self):
+        self.database.sort_by(lambda x: x.title)
+
+    def sort_group(self):
+        self.database.sort_by(lambda x: x.group)
+
+    def sort_amount(self):
+        self.database.sort_by(lambda x: x.amount)
+
+    def sort_curr(self):
+        self.database.sort_by(lambda x: x.currency)
 
 
 if __name__ == "__main__":

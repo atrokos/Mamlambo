@@ -8,8 +8,7 @@ from src.Database.database_wrapper import DatabaseView
 from src.GUI.about_window import AboutWindow
 from src.GUI.add_transaction import TransactionWindow
 from src.GUI.button_row import ButtonRow
-from src.GUI.transaction_view import TransactionTreeView, TransactionPages
-from src.Transactions import Transaction
+from src.GUI.transaction_view import TransactionPages
 
 
 class MainWindow(tk.Tk):
@@ -29,7 +28,8 @@ class MainWindow(tk.Tk):
                 "Date": "2024-05-31",
                 "Title": "Test",
                 "Group": "Test",
-                "Amount": "-256 CZK",
+                "Amount": "-256",
+                "Currency": "CZK",
                 "Description": "Test"
             }
         }

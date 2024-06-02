@@ -16,6 +16,7 @@ class TransactionWindow(tk.Toplevel):
         self.resizable(True, False)
         self.columnconfigure(1, weight=1)
         self.values = dict()
+        self.result = None
         self.templates = templates
         self.template_sel = None
 
@@ -24,6 +25,10 @@ class TransactionWindow(tk.Toplevel):
         if defaults is not None:
             self.title("Edit Transaction")
             for entry, value in defaults.items():
+                if entry == "Currency":
+                    self.values["Amount"].set(
+                        self.values["Amount"].get() + " " + value)  # Append currency to the amount
+                    continue
                 self.values[entry].set(value)
 
     def setup(self):
@@ -43,6 +48,24 @@ class TransactionWindow(tk.Toplevel):
             self.templates.pop(template_name)
 
     def confirm_event(self):
+        amount = self.values["Amount"].get().split(" ")
+        if len(amount) != 2:
+            mb.showerror("Incorrect format", "Currency has to follow this format: \"<amount> <ISO code>\"")
+            return
+        data = [
+            self.values["Date"].get(),
+            self.values["Title"].get(),
+            self.values["Group"].get(),
+            amount[0],
+            amount[1],
+            self.values["Description"].get()
+        ]
+        try:
+            self.result = Transaction.parse(data)
+        except ValueError as e:
+            mb.showerror("Incorrect format", str(e))
+            return
+
         self.destroy()
 
     def save_template_event(self):
@@ -70,6 +93,9 @@ class TransactionWindow(tk.Toplevel):
             return
 
         for entry, value in self.templates[template_name].items():
+            if entry == "Currency":
+                self.values["Amount"].set(self.values["Amount"].get() + " " + value)  # Append currency to the amount
+                continue
             self.values[entry].set(value)
 
     def _setup_buttons(self):
@@ -82,20 +108,7 @@ class TransactionWindow(tk.Toplevel):
                    ).grid(row=button_row, column=2, sticky="e", pady=(10, 5), padx=5)
 
     def get_transaction(self):
-        if self.values is None:
-            return None
-
-        # TODO nicer way
-        amount = self.values["Amount"].get().split(" ")
-        data = [
-            self.values["Date"].get(),
-            self.values["Title"].get(),
-            self.values["Group"].get(),
-            amount[0],
-            amount[1],
-            self.values["Description"].get()
-        ]
-        return Transaction.parse(data)
+        return self.result
 
     def next_row(self):
         return self.grid_size()[1]
@@ -112,6 +125,8 @@ class TransactionWindow(tk.Toplevel):
 
     def _setup_entries(self):
         for entry in Transaction.value_names:
+            if entry == "Currency":  # Currency is included in the "Amount" entry
+                continue
             self.values[entry] = tk.StringVar()
             row = self.next_row()
             ttk.Label(self, text=entry).grid(row=row, column=0, sticky="w", pady=(0, 8), padx=(5, 0))

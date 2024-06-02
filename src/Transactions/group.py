@@ -1,9 +1,12 @@
 
 
-
 class Group:
     def __init__(self, name):
-        self.name = name.split("::")
+        self.name = name
+        self.parts = name.split("::")
 
     def __str__(self):
-        return "::".join(self.name)
+        return self.name
+
+    def __cmp__(self, other):
+        return self.name.__cmp__(other.name)

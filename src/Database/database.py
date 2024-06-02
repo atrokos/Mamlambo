@@ -1,4 +1,5 @@
 import csv
+import json
 from collections import deque
 from typing import Callable
 from pathlib import Path
@@ -11,7 +12,7 @@ class Database:
         """Initialize the Database with empty lists for entries and commits, and an empty deque for free indices."""
         self._entries: list[Transaction] = []
         self._commits = []
-        self._history = deque(maxlen=3)
+        self._history = deque(maxlen=10)
         self._saved = True
 
     def __len__(self):
@@ -33,12 +34,18 @@ class Database:
         # In case we load an already loaded database
         self._entries = []
         self._commits = []
-        self._history = deque(maxlen=3)
+        self._history = deque(maxlen=10)
 
+        linecount = 1
         with open(filename, 'r', encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
+            linecount += 1
             for row in reader:
-                self._entries.append(Transaction.parse(row))
+                try:
+                    self._entries.append(Transaction.parse(row))
+                except ValueError as e:
+                    print(f"Entry at line {linecount} will not be loaded, as it is not in a valid state:\n" +
+                          f"{str(e)}")
 
     def dump(self, filename: Path, /, delimiter: str = ',') -> None:
         """
@@ -59,8 +66,10 @@ class Database:
                 writer = csv.writer(f, delimiter=delimiter)
                 writer.writerows(map(lambda e: e.dump(), self._entries))
         elif filetype == "json":
-            # TODO
-            pass
+            data = [trn.to_dict() for trn in self._entries]
+
+            with open(filename, 'w') as file:
+                json.dump(data, file, indent=4)
         else:
             raise ValueError(f"Unsupported file type: {filetype}")
 
@@ -77,7 +86,7 @@ class Database:
         self._history.appendleft(commit_data)  # Store the commit data in history
         self._commits = []  # Clear the commits after processing
 
-        if consolidate:  # If there was any transaction removed, move all Nones to the end
+        if consolidate:  # If there was any transaction removed, consolidate the database
             self._consolidate()
 
     def revert(self):
@@ -177,6 +186,10 @@ class Database:
         return commit
 
     def _consolidate(self):
+        """
+        Consolidates the database, first moving all Nones to the end and then popping them to save space.
+        :return:
+        """
         l, r = 0, 1
         while l < len(self._entries) and r < len(self._entries):
             if self._entries[l] is not None:
