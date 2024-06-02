@@ -8,7 +8,8 @@ from src.Database.database_wrapper import DatabaseView
 from src.GUI.about_window import AboutWindow
 from src.GUI.add_transaction import TransactionWindow
 from src.GUI.button_row import ButtonRow
-from src.GUI.transaction_view import TransactionPages
+from src.GUI.filters_window import FiltersWindow
+from src.GUI.transactions_list import TransactionPages
 
 
 class MainWindow(tk.Tk):
@@ -18,11 +19,11 @@ class MainWindow(tk.Tk):
         self.title("Mamlambo")  # Set the window title
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
-        self.resizable(True, False)
+        self.rowconfigure(1, weight=1)
         self._left_ribbon = None
         self._right_ribbon = None
         self.trns_pages: TransactionPages | None = None
-        self.database = None
+        self.database: DatabaseView | None = None
         self.templates = {
             "Test": {
                 "Date": "2024-05-31",
@@ -46,7 +47,11 @@ class MainWindow(tk.Tk):
         file_menu.add_command(label='New', command=self.new_session)
         file_menu.add_command(label="Open", command=self.open_session)
         file_menu.add_command(label="Save", command=self.save_session)
-        file_menu.add_command(label='Exit', command=self.destroy)
+        file_menu.add_command(label='Exit without saving', command=self.destroy)
+
+        tools_menu = tk.Menu(menubar, tearoff=0)
+        tools_menu.add_command(label="Convert currency")
+        tools_menu.add_command(label="Statistics")
 
         options_menu = tk.Menu(menubar, tearoff=0)
         options_menu.add_command(label="CSV")
@@ -56,6 +61,7 @@ class MainWindow(tk.Tk):
         help_menu.add_command(label="About", command=self.display_about)
 
         menubar.add_cascade(label='File', menu=file_menu)
+        menubar.add_cascade(label='Tools', menu=tools_menu)
         menubar.add_cascade(label='Options', menu=options_menu)
         menubar.add_cascade(label='Help', menu=help_menu)
         self.config(menu=menubar)  # Set the menubar for the main window
@@ -65,7 +71,7 @@ class MainWindow(tk.Tk):
         if not answer:
             return
 
-        self.database = DatabaseView()
+        self.database = DatabaseView(lambda x: x.date, True)
         self.database.subscribe(self.update_buttons)
         self.trns_pages.set_database(self.database)
         self._left_ribbon.enable_all()
@@ -90,10 +96,10 @@ class MainWindow(tk.Tk):
         filename = fd.askopenfilename()
         if filename == "":
             return
-        self.database = DatabaseView()
+        self.database = DatabaseView(lambda x: x.date, True)
         self.database.subscribe(self.update_buttons)
         self.trns_pages.set_database(self.database)
-        self.database.load(filename)
+        self.database.load(filename, defaultorder=lambda x: x.date)
         self._left_ribbon.enable_all()
 
     def save_session(self):
@@ -127,7 +133,7 @@ class MainWindow(tk.Tk):
         self._left_ribbon.add_button("Add", command=self.add_trn_comm)
         self._left_ribbon.add_button("Edit", command=self.edit_trn_comm)
         self._left_ribbon.add_button("Remove", command=self.remove_trn_comm)
-        self._left_ribbon.add_button("Filter", command=self.nothing)
+        self._left_ribbon.add_button("Filter", command=self.filter_comm)
         self._left_ribbon.disable_all()
 
         self._right_ribbon = ButtonRow(self)
@@ -138,6 +144,14 @@ class MainWindow(tk.Tk):
 
     def nothing(self, event=None):
         pass
+
+    def filter_comm(self):
+        filter_window = FiltersWindow(self)
+        filter_window.grab_set()
+        filter_window.wait_window()
+
+        filters = filter_window.get_results()
+        self.database.sort_by(lambda x: x.date, filters=filters)
 
     def add_trn_comm(self):
         transaction_window = TransactionWindow(self, templates=self.templates)

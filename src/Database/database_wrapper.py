@@ -22,17 +22,47 @@ class DatabaseView(Database):
     It also employs reactive programming, as classes that depend on the database's data
     can add their own callback that is called every time the database changes state.
     """
-    def __init__(self):
+    def __init__(self, sort_key, reverse_sort):
         super().__init__()
         self._view = []
         self._subscribers = []
         self._prev_action = Action.NONE
         self._saved = False
+        self._sort_key = sort_key
+        self._reverse = reverse_sort
+        self._filters = []
 
-    def sort_by(self, getter, reverse=False):
+    def __len__(self):
+        return len(self._view)
+
+    def sort_by(self, /, sort_key=None, reverse=None, filters=None) -> None:
+        """
+        Sorts the entries in the database according to the given arguments.
+        If any of the arguments is left out, the previously used one will be used.
+        :param sort_key: A function that is called on the database entry, returning the value to sort by.
+        :param reverse: Whether to reverse the sort order.
+        :param filters: A list of filters that all have to return `True` to keep the database entry.
+        :return:
+        """
+        if sort_key is None:
+            sort_key = self._sort_key
+        else:
+            self._sort_key = sort_key
+
+        if reverse is None:
+            reverse = self._reverse
+        else:
+            self._reverse = reverse
+
+        if filters is not None:
+            indices = [i for i in range(len(self._entries)) if Database._check_filters(self._entries[i], filters)]
+            self._filters = filters
+        else:
+            indices = [i for i in range(len(self._entries)) if Database._check_filters(self._entries[i], self._filters)]
+
         self._view = sorted(
-            range(len(self._entries)),
-            key=lambda i: getter(self._entries[i]),
+            indices,
+            key=lambda i: sort_key(self._entries[i]),
             reverse=reverse
         )
         self._prev_action = Action.STATE_CHANGE
@@ -42,23 +72,25 @@ class DatabaseView(Database):
         super().dump(filename, delimiter)
         self._saved = True
 
-    def load(self, filename: Path | str, **kwargs):
-        super().load(filename, **kwargs)
+    def load(self, filename: Path | str, /, delimiter=",", defaultorder=None):
+        super().load(filename, delimiter)
         self._prev_action = Action.LOAD
         self._saved = True
+        if defaultorder is not None:
+            self.sort_by(defaultorder)
         self._call_all()
 
     def commit(self):
         super().commit()
         self._prev_action = Action.STATE_CHANGE
         self._saved = False
-        self._call_all()
+        self.sort_by()
 
     def revert(self):
         super().revert()
         self._prev_action = Action.STATE_CHANGE
         self._saved = False
-        self._call_all()
+        self.sort_by()
 
     def add(self, transaction):
         super().add(transaction)

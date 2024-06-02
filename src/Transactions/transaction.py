@@ -55,21 +55,21 @@ class Transaction:
         return self._note
 
     @staticmethod
-    def __parse_date(d: str):
+    def validate_date(d: str):
         try:
             return date.fromisoformat(d)
         except:
             raise ValueError("Incorrect date format. The format is\nYYYY-MM-DD")
 
     @staticmethod
-    def __parse_value(value: str):
+    def validate_amount(value: str):
         try:
             return float(value)
         except:
             raise ValueError("Incorrect amount format. Possible cause: using comma instead of a dot.")
 
     @staticmethod
-    def __parse_iso(code: str):
+    def validate_currency(code: str):
         if len(code) != 3 or not code.isupper():
             raise ValueError("Expected the currency's ISO 4217 code.")
         return code
@@ -77,11 +77,11 @@ class Transaction:
     @staticmethod
     def parse(row):
         parsers = [
-            Transaction.__parse_date,
+            Transaction.validate_date,
             str,
             Group,
-            Transaction.__parse_value,
-            Transaction.__parse_iso,
+            Transaction.validate_amount,
+            Transaction.validate_currency,
             str
         ]
 

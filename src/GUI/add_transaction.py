@@ -29,6 +29,7 @@ class TransactionWindow(tk.Toplevel):
                     self.values["Amount"].set(
                         self.values["Amount"].get() + " " + value)  # Append currency to the amount
                     continue
+
                 self.values[entry].set(value)
 
     def setup(self):

@@ -65,7 +65,6 @@ class TransactionPages(tk.Frame):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
 
         self.database: DatabaseView = database
         self.treeview = None
@@ -80,7 +79,6 @@ class TransactionPages(tk.Frame):
     def set_database(self, database):
         self.database = database
         self.database.subscribe(self.refresh)
-        self._order_columns()
 
     def set_items_per_page(self, items: int):
         if items <= 0:
@@ -143,7 +141,6 @@ class TransactionPages(tk.Frame):
         return [offset + int(x) for x in self.treeview.selection()]
 
     def sort_by(self, prop: Property):
-        print(prop)
         if prop == self.order_state.property:
             # If the properties are the same, simply switch the order
             new_order = (self.order_state.order.value + 1) % 2
@@ -175,7 +172,7 @@ class TransactionPages(tk.Frame):
             case _:
                 return
 
-        self.database.sort_by(key, reverse=reverse)
+        self.database.sort_by(sort_key=key, reverse=reverse)
 
 
 if __name__ == "__main__":
