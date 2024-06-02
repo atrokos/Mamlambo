@@ -1,8 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
+from typing import Callable
 
 from src.Database.database_wrapper import DatabaseView
 from src.Transactions import Transaction
+from src.Enums.enums import Order, Property
+from collections import namedtuple
+
+OrderState = namedtuple("OrderState", ["property", "order"])
 
 
 class TransactionTreeView(ttk.Treeview):
@@ -10,12 +15,12 @@ class TransactionTreeView(ttk.Treeview):
         super().__init__(parent, show="headings")
         self["columns"] = ("Date", "Title", "Group", "Amount", "Currency", "Description")
 
-        self.heading("#1", text="Date", command=parent.sort_date)
+        self.heading("#1", text="Date")
         self.column("#1", width=80)
-        self.heading("#2", text="Title", command=parent.sort_title)
-        self.heading("#3", text="Group", command=parent.sort_group)
-        self.heading("#4", text="Amount", command=parent.sort_amount)
-        self.heading("#5", text="Currency", command=parent.sort_curr)
+        self.heading("#2", text="Title")
+        self.heading("#3", text="Group")
+        self.heading("#4", text="Amount")
+        self.heading("#5", text="Currency")
         self.column("#5", width=60)
         self.heading("#6", text="Description")
 
@@ -40,12 +45,21 @@ class TransactionTreeView(ttk.Treeview):
 
             counter += 1
 
+    def bind_column_press(self, function: Callable[[Property], None]):
+        # The IDs of the headings correspond to their Enum value + 1
+        self.heading(f"#1", command=lambda: function(Property.DATE))
+        self.heading(f"#2", command=lambda: function(Property.TITLE))
+        self.heading(f"#3", command=lambda: function(Property.GROUP))
+        self.heading(f"#4", command=lambda: function(Property.AMOUNT))
+        self.heading(f"#5", command=lambda: function(Property.CURRENCY))
+
 
 class TransactionPages(tk.Frame):
     """
     Contains all logic for rendering the Transactions table, along with
     page switching and accessing the database for rendered data.
     """
+
     def __init__(self, master, database):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
@@ -59,12 +73,14 @@ class TransactionPages(tk.Frame):
         self.prev_btn = None
         self.curr_page = 0
         self.items_per_page = 10
+        self.order_state: OrderState = OrderState(Property.DATE, Order.DESC)
         self._setup_treeview()
         self._setup_buttons()
 
     def set_database(self, database):
         self.database = database
         self.database.subscribe(self.refresh)
+        self._order_columns()
 
     def set_items_per_page(self, items: int):
         if items <= 0:
@@ -81,6 +97,7 @@ class TransactionPages(tk.Frame):
 
     def _setup_treeview(self):
         self.treeview = TransactionTreeView(self)
+        self.treeview.bind_column_press(self.sort_by)
         self.treeview.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
     def _setup_buttons(self):
@@ -96,7 +113,7 @@ class TransactionPages(tk.Frame):
     def _next_page(self):
         self.curr_page += 1
         self.treeview.populate_tree(self._get_page(self.curr_page))
-    
+
     def _get_page(self, page_number):
         """Returns only a given slice of data."""
         start = page_number * self.items_per_page
@@ -125,20 +142,40 @@ class TransactionPages(tk.Frame):
         offset = self.curr_page * self.items_per_page
         return [offset + int(x) for x in self.treeview.selection()]
 
-    def sort_date(self):
-        self.database.sort_by(lambda x: x.date)
+    def sort_by(self, prop: Property):
+        print(prop)
+        if prop == self.order_state.property:
+            # If the properties are the same, simply switch the order
+            new_order = (self.order_state.order.value + 1) % 2
+            self.order_state = self.order_state._replace(order=Order(new_order))
+        else:
+            # Otherwise change the order to `descending`
+            self.order_state = OrderState(property=prop, order=Order.DESC)
 
-    def sort_title(self):
-        self.database.sort_by(lambda x: x.title)
+        self._order_columns()
 
-    def sort_group(self):
-        self.database.sort_by(lambda x: x.group)
+    def _order_columns(self):
+        if self.database is None:
+            return
 
-    def sort_amount(self):
-        self.database.sort_by(lambda x: x.amount)
+        # Orders data according to `self.order_state`
+        reverse = True if self.order_state.order == Order.DESC else False
 
-    def sort_curr(self):
-        self.database.sort_by(lambda x: x.currency)
+        match self.order_state.property:
+            case Property.DATE:
+                key = lambda x: x.date
+            case Property.TITLE:
+                key = lambda x: x.title
+            case Property.GROUP:
+                key = lambda x: x.group
+            case Property.AMOUNT:
+                key = lambda x: x.amount
+            case Property.CURRENCY:
+                key = lambda x: x.currency
+            case _:
+                return
+
+        self.database.sort_by(key, reverse=reverse)
 
 
 if __name__ == "__main__":
@@ -162,5 +199,3 @@ if __name__ == "__main__":
     tree.grid(row=0, column=0, sticky="nsew")
 
     root.mainloop()
-
-

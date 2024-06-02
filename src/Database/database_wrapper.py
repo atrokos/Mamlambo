@@ -7,7 +7,7 @@ from src.Database import Database
 
 class Action(Enum):
     NONE = 0  # No action was performed
-    LOAD = 1  # Database loading
+    LOAD = 1  # Database was loaded
     PUSH = 2  # Pushing changes (i.e. calling add, remove, edit)
     STATE_CHANGE = 3  # Commiting / reverting changes
 
@@ -100,6 +100,9 @@ class DatabaseView(Database):
     def __getitem__(self, item):
         if len(self._view) == 0:
             return self._entries[item]
+
+        if type(item) is int:
+            return self._entries[self._view[item]]
 
         return [self._entries[i] for i in self._view[item]]
 
