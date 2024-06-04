@@ -1,5 +1,5 @@
 from datetime import date
-from src.Transactions.group import Group
+from mamlambo.Transactions.group import Group
 
 
 class Transaction:

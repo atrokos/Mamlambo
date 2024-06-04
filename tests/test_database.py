@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from src.Database.database import Database
-from src.Transactions import Transaction
+from mamlambo.Database.database import Database
+from mamlambo.Transactions import Transaction
 
 
 class TestDatabase(TestCase):

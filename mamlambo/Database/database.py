@@ -4,10 +4,10 @@ from collections import deque
 from typing import Callable
 from pathlib import Path
 
-from src.Transactions import Transaction
+from mamlambo.Transactions import Transaction
 
 
-class Database:
+class Database[T]:
     def __init__(self):
         """Initialize the Database with empty lists for entries and commits, and an empty deque for free indices."""
         self._entries: list[Transaction] = []
@@ -16,19 +16,23 @@ class Database:
         self._saved = True
 
     def __len__(self):
+        """Return the number of entries in the database."""
         return len(self._entries)
 
     def __iter__(self):
+        """Return an iterator over the entries in the database."""
         return iter(self._entries)
 
     def __getitem__(self, item):
+        """Return the entry at the specified index."""
         return self._entries[item]
 
-    def load(self, filename: Path | str, /, delimiter: str = ',') -> None:
+    def load(self, filename: Path | str, line_parser: Callable[[list[str]], T], /, delimiter: str = ',') -> None:
         """
-        Load transactions from a CSV file into the database.
+        Loads transactions from a CSV file into the database. Overwrites any existing entries.
 
         :param filename: The path to the CSV file to load.
+        :param line_parser: Parses the CSV to the database representation.
         :param delimiter: The delimiter used in the CSV file.
         """
         # In case we load an already loaded database
@@ -39,19 +43,19 @@ class Database:
         linecount = 1
         with open(filename, 'r', encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
-            linecount += 1
             for row in reader:
+                linecount += 1
                 try:
-                    self._entries.append(Transaction.parse(row))
+                    self._entries.append(line_parser(row))
                 except ValueError as e:
                     print(f"Entry at line {linecount} will not be loaded, as it is not in a valid state:\n" +
                           f"{str(e)}")
 
     def dump(self, filename: Path, /, delimiter: str = ',') -> None:
         """
-        Dump the database transactions into a CSV file.
+        Dump the database transactions into a CSV or JSON file.
 
-        :param filename: The path to the CSV file to write to.
+        :param filename: The path to the file to write to.
         :param delimiter: The delimiter to use in the CSV file.
         """
         filetype = "csv"
@@ -61,17 +65,18 @@ class Database:
             # If no filetype seems to be supplied, default to csv
             pass
 
-        if filetype == "csv":
-            with open(filename, 'w', encoding="utf-8") as f:
-                writer = csv.writer(f, delimiter=delimiter)
-                writer.writerows(map(lambda e: e.dump(), self._entries))
-        elif filetype == "json":
-            data = [trn.to_dict() for trn in self._entries]
+        match filetype:
+            case "csv":
+                with open(filename, 'w', encoding="utf-8", newline='') as f:
+                    writer = csv.writer(f, delimiter=delimiter)
+                    writer.writerows(map(lambda e: e.dump(), self._entries))
+            case "json":
+                data = [trn.to_dict() for trn in self._entries]
 
-            with open(filename, 'w') as file:
-                json.dump(data, file, indent=4)
-        else:
-            raise ValueError(f"Unsupported file type: {filetype}")
+                with open(filename, 'w') as file:
+                    json.dump(data, file, indent=4)
+            case _:
+                raise ValueError(f"Unsupported file type: {filetype}")
 
     def commit(self):
         """Process all pending commits to the database and store them in history."""
@@ -104,25 +109,13 @@ class Database:
         if consolidate:
             self._consolidate()
 
-    def all_commited(self):
-        return len(self._commits) == 0
+    def get_history(self):
+        """Return the history of commits."""
+        return self._history
 
-    def can_revert(self):
-        return len(self._history) > 0
-
-    def select(self, filters: list[Callable[[Transaction], bool]]) -> list[Transaction]:
-        """
-        Select transactions that match all the given filters.
-
-        :param filters: A list of callables that return True if the transaction matches the filter.
-        :return: A list of Transactions that match all filters.
-        """
-        selected = []
-        for transaction in self._entries:
-            if self._check_filters(transaction, filters):
-                selected.append(transaction)
-
-        return selected
+    def get_commits(self):
+        """Return the list of pending commits."""
+        return self._commits
 
     def add(self, transaction: Transaction):
         """
@@ -133,18 +126,6 @@ class Database:
         commit = {
             "action": "add",
             "value": transaction
-        }
-        self._commits.append(commit)
-
-    def remove(self, index: int):
-        """
-        Schedule a transaction to be removed from the database by index.
-
-        :param index: The index of the transaction to remove.
-        """
-        commit = {
-            "action": "remove",
-            "index": index
         }
         self._commits.append(commit)
 
@@ -162,11 +143,24 @@ class Database:
         }
         self._commits.append(commit)
 
+    def remove(self, index: int):
+        """
+        Schedule a transaction to be removed from the database by index.
+
+        :param index: The index of the transaction to remove.
+        """
+        commit = {
+            "action": "remove",
+            "index": index
+        }
+        self._commits.append(commit)
+
     def _handle_commit(self, commit: dict) -> dict:
         """
         Handle a single commit action.
 
         :param commit: A dictionary representing the commit to handle.
+        :return: The processed commit dictionary with additional information.
         """
         match commit["action"]:
             case "add":
@@ -187,8 +181,7 @@ class Database:
 
     def _consolidate(self):
         """
-        Consolidates the database, first moving all Nones to the end and then popping them to save space.
-        :return:
+        Consolidates the database, first moving all None values to the end and then popping them to save space.
         """
         l, r = 0, 1
         while l < len(self._entries) and r < len(self._entries):
@@ -207,7 +200,11 @@ class Database:
             self._entries.pop()
 
     def _undo_commit(self, commit: dict) -> None:
-        """Undo a single commit action."""
+        """
+        Undo a single commit action.
+
+        :param commit: A dictionary representing the commit to undo.
+        """
         match commit["action"]:
             case "add":
                 # Find the transaction to remove
@@ -227,18 +224,3 @@ class Database:
                 index = commit["index"]
                 transaction = commit["old_value"]
                 self._entries[index] = transaction
-
-    @staticmethod
-    def _check_filters(transaction: Transaction, filters: list[Callable[[Transaction], bool]]) -> bool:
-        """
-        Check if a transaction passes all filters.
-
-        :param transaction: The Transaction to check.
-        :param filters: A list of callables that return True if the transaction matches the filter.
-        :return: True if the transaction passes all filters, False otherwise.
-        """
-        for fil in filters:
-            if not fil(transaction):
-                return False
-
-        return True

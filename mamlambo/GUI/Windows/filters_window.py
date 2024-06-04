@@ -3,7 +3,8 @@ from tkinter import ttk
 import tkinter.messagebox as mb
 from typing import Callable
 
-from src.Transactions import Transaction
+from mamlambo.Transactions import Transaction
+from mamlambo.Transactions.group import Group
 
 
 class FiltersWindow(tk.Toplevel):
@@ -83,10 +84,10 @@ class FiltersWindow(tk.Toplevel):
         return result
 
     def _parse_filter(self, fil: dict) -> Callable[[Transaction], bool]:
-        # This part uses a lot of functional programming, as it makes these kinds
+        # This part uses a lot of functional programming, as it makes these kinds of
         # comparisons easier.
 
-        # Split the entered data by `space`, first should be the comparator, second
+        # Split the entered data by " ", first should be the comparator, second
         # the compared value
         entry_split = fil["Entry"].get().split(" ", 1)
         if len(entry_split) == 2:
@@ -105,7 +106,7 @@ class FiltersWindow(tk.Toplevel):
                 parsed_value = value
             case "Group":
                 getter = lambda x: x.group
-                parsed_value = value
+                parsed_value = Group(value)
             case "Amount":
                 getter = lambda x: x.amount
                 parsed_value = Transaction.validate_amount(value)

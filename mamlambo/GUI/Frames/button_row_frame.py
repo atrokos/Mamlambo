@@ -3,7 +3,7 @@ from tkinter import ttk
 from typing import Literal
 
 
-class ButtonRow(tk.Frame):
+class ButtonRowFrame(tk.Frame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self._buttons = dict()
