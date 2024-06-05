@@ -22,10 +22,10 @@ class Converter:
         except KeyError:
             return []
 
-    def get_all_currencies(self):
+    def get_all_currencies(self) -> list[str]:
         return list(self._conversions.keys())
 
-    def _find_conversions(self, conversion_data):
+    def _find_conversions(self, conversion_data: list[dict[str, Any]]) -> None:
         graph = dict()
         conversions = dict()
 
@@ -53,33 +53,3 @@ class Converter:
 
         self._conversion_values = graph
         self._conversions = conversions
-
-
-if __name__ == '__main__':
-    conv = [
-        {
-            "#1": "CZK",
-            "#2": "USD",
-            "Value": 0.044
-        },
-        {
-            "#1": "EUR",
-            "#2": "GBP",
-            "Value": 0.86
-        },
-        {
-            "#1": "JPY",
-            "#2": "USD",
-            "Value": 0.0092
-        },
-        {
-            "#1": "USD",
-            "#2": "EUR",
-            "Value": 0.92
-        }
-    ]
-    converter = Converter(conv)
-    print(converter.get_available_conversions("CZK"))
-    print(converter.convert("CZK", "USD", 50))
-
-

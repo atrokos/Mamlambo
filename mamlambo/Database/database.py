@@ -27,7 +27,7 @@ class Database[T]:
         """Return the entry at the specified index."""
         return self._entries[item]
 
-    def load(self, filename: Path | str, line_parser: Callable[[list[str]], T], /, delimiter: str = ',') -> None:
+    def load(self, filename: str, line_parser: Callable[[list[str]], T], /, delimiter: str = ',') -> None:
         """
         Loads transactions from a CSV file into the database. Overwrites any existing entries.
 
@@ -35,6 +35,9 @@ class Database[T]:
         :param line_parser: Parses the CSV to the database representation.
         :param delimiter: The delimiter used in the CSV file.
         """
+        if str.split(".")[-1] != "csv":
+            raise ValueError("Only CSV files are supported.")
+
         # In case we load an already loaded database
         self._entries = []
         self._commits = []

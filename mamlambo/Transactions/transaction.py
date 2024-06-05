@@ -69,7 +69,7 @@ class Transaction:
     def validate_amount(value: str):
         try:
             return float(value)
-        except:
+        except ValueError:
             raise ValueError("Incorrect amount format. Possible cause: using comma instead of a dot.")
 
     @staticmethod

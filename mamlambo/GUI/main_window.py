@@ -7,7 +7,7 @@ import json
 from mamlambo.Database import DatabaseView
 from mamlambo.GUI.Windows import AboutWindow, TransactionWindow, FiltersWindow, StatisticsWindow
 from mamlambo.GUI.Frames import TransactionPagesFrame, ButtonRowFrame
-from mamlambo.GUI.Windows.ConversionWindow import ConversionWindow
+from mamlambo.GUI.Windows.conversion_window import ConversionWindow
 from mamlambo.Transactions import Transaction
 
 
@@ -57,7 +57,12 @@ class MainWindow(tk.Tk):
         self._database = DatabaseView(lambda x: x.date, True)
         self._database.subscribe(self._update_buttons)
         self.trns_pages.set_database(self._database)
-        self._database.load(filename, Transaction.parse)
+        try:
+            self._database.load(filename, Transaction.parse)
+        except ValueError as e:
+            mb.showerror("Import error", str(e))
+            self._database = None
+            return
         self._left_btn_row.enable_all()
 
     def _save_session(self):

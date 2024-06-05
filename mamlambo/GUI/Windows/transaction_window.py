@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import tkinter.messagebox as mb
+from typing import Union
 
 from mamlambo.Transactions import Transaction
 
@@ -16,11 +17,10 @@ class TransactionWindow(tk.Toplevel):
     def __init__(self, master, templates=None, transaction: Transaction | None = None):
         super().__init__(master)
 
-        self.title('Add Transaction')
         self.resizable(True, False)
         self.columnconfigure(1, weight=1)
         self._values = dict()
-        self.result = None
+        self._result = None
         self.templates = templates
         self.template_sel = None
 
@@ -29,14 +29,16 @@ class TransactionWindow(tk.Toplevel):
         if transaction is not None:
             self.title("Edit Transaction")
             self._set_transaction(transaction)
+        else:
+            self.title("Add Transaction")
 
-    def get_transaction(self):
+    def get_transaction(self) -> Transaction | None:
         """
         Get the transaction created or edited in the window.
 
         :return: The Transaction object or None.
         """
-        return self.result
+        return self._result
 
     def _setup_all(self):
         """Set up all widgets in the window."""
@@ -73,17 +75,20 @@ class TransactionWindow(tk.Toplevel):
     def _confirm_event(self):
         """
         Confirm the creation or editing of the transaction and close the window.
+        If the transaction data are incorrect, do not close the window.
         """
         data = self._create_transaction_data()
+        if data is None:
+            return
         try:
-            self.result = Transaction.parse(data)
+            self._result = Transaction.parse(data)
         except ValueError as e:
             mb.showerror("Incorrect format", str(e))
             return
 
         self.destroy()
 
-    def _create_transaction_data(self):
+    def _create_transaction_data(self) -> list[str] | None:
         """
         Create a list of transaction data from the user input.
 
@@ -92,7 +97,7 @@ class TransactionWindow(tk.Toplevel):
         amount = self._values["Amount"].get().split(" ")
         if len(amount) != 2:
             mb.showerror("Incorrect format", "Currency has to follow this format: \"<amount> <ISO code>\"")
-            return
+            return None
         data = [
             self._values["Date"].get(),
             self._values["Title"].get(),
@@ -103,7 +108,7 @@ class TransactionWindow(tk.Toplevel):
         ]
         return data
 
-    def _save_template_event(self):
+    def _save_template_event(self) -> None:
         """
         Save the current transaction as a template.
         """
@@ -116,9 +121,9 @@ class TransactionWindow(tk.Toplevel):
 
         self.templates[template_name] = template
 
-    def _add_template(self, template_name: str):
+    def _add_template(self, template_name: str) -> dict:
         """
-        Add a new template to the templates dictionary.
+        Add a new template to the templates' dictionary.
 
         :param template_name: The name of the new template.
         :return: The created template dictionary.
@@ -132,14 +137,14 @@ class TransactionWindow(tk.Toplevel):
 
         return template
 
-    def _cancel_event(self):
+    def _cancel_event(self) -> None:
         """
         Cancel the transaction creation or editing and close the window.
         """
         self._values = None
         self.destroy()
 
-    def _update_template(self, event=None):
+    def _update_template(self, event=None) -> None:
         """
         Update the input fields with the selected template data.
         """
@@ -154,7 +159,7 @@ class TransactionWindow(tk.Toplevel):
                 continue
             self._values[entry].set(value)
 
-    def _next_row(self):
+    def _next_row(self) -> int:
         """
         Get the next available row in the grid.
 
@@ -162,7 +167,7 @@ class TransactionWindow(tk.Toplevel):
         """
         return self.grid_size()[1]
 
-    def _setup_buttons(self):
+    def _setup_buttons(self) -> None:
         """Set up the buttons in the window."""
         button_row = self._next_row()
         ttk.Button(self, text="Cancel", command=self._cancel_event
@@ -172,7 +177,7 @@ class TransactionWindow(tk.Toplevel):
         ttk.Button(self, text="Confirm", command=self._confirm_event
                    ).grid(row=button_row, column=2, sticky="e", pady=(10, 5), padx=5)
 
-    def _setup_template_sel(self):
+    def _setup_template_sel(self) -> None:
         """Set up the template selection widgets."""
         template_names = sorted(self.templates.keys())
         box_row = self._next_row()
@@ -183,7 +188,7 @@ class TransactionWindow(tk.Toplevel):
         ttk.Button(self, text="Delete", command=self._delete_template
                    ).grid(row=box_row, column=2, sticky='w', pady=(0, 8))
 
-    def _setup_entries(self):
+    def _setup_entries(self) -> None:
         """Set up the entry widgets for transaction details."""
         for entry in Transaction.value_names:
             if entry == "Currency":  # Currency is included in the "Amount" entry
@@ -203,28 +208,28 @@ class EntryWindow(tk.Toplevel):
     :param title: The title of the window.
     :param label: The label text for the entry field.
     """
-    def __init__(self, master, /, title, label):
+    def __init__(self, master, /, title, label) -> None:
         super().__init__(master)
-        self.result = tk.StringVar()
         self.title(title)
+        self._result = tk.StringVar()
         ttk.Label(self, text=label).grid(row=0, column=0, sticky="w", pady=(5, 8), padx=5)
-        ttk.Entry(self, textvariable=self.result).grid(row=0, column=1, sticky="ew", pady=(5, 8), padx=5)
+        ttk.Entry(self, textvariable=self._result).grid(row=0, column=1, sticky="ew", pady=(5, 8), padx=5)
         ttk.Button(self, text="Cancel", command=self.cancel).grid(row=1, column=0, sticky="w", pady=(0, 8), padx=5)
         ttk.Button(self, text="Confirm", command=self.confirm).grid(row=1, column=1, sticky="e", pady=(0, 8), padx=5)
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the input and close the window."""
-        self.result = tk.StringVar()  # Reset the variable if user cancels the action
+        self._result = tk.StringVar()  # Reset the variable if user cancels the action
         self.destroy()
 
-    def confirm(self):
+    def confirm(self) -> None:
         """Confirm the input and close the window."""
         self.destroy()
 
-    def get_result(self):
+    def get_result(self) -> str:
         """
         Get the result of the user input.
 
         :return: The input string.
         """
-        return self.result.get()
+        return self._result.get()

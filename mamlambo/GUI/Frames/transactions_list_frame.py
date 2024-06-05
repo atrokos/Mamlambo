@@ -40,14 +40,6 @@ class TransactionPagesFrame(tk.Frame):
         self.database = database
         self.database.subscribe(self.refresh)
 
-    def set_items_per_page(self, items: int):
-        """Set the number of items to display per page."""
-        if items <= 0:
-            return
-
-        self.items_per_page = items
-        self.refresh()
-
     def refresh(self):
         """Refresh the treeview with the current page of transactions."""
         if self.database is None:

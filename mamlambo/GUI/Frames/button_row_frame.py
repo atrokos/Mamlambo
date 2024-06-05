@@ -4,6 +4,9 @@ from typing import Literal
 
 
 class ButtonRowFrame(tk.Frame):
+    """
+    Represents a row of buttons.
+    """
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self._buttons = dict()
@@ -16,13 +19,6 @@ class ButtonRowFrame(tk.Frame):
         button = ttk.Button(self, text=label, image=icon, command=command)
         button.pack(side=side)
         self._buttons[label.lower()] = button
-
-    def add_separator(self, side: Literal["left", "right", "top", "bottom"] = "left"):
-        ttk.Separator(self, orient=tk.VERTICAL).pack(side=side, expand=True, fill=tk.BOTH, padx=5)
-
-    def _next_column(self):
-        self._last_column += 1
-        return self._last_column
 
     def enable_all(self):
         for button in self._buttons.values():

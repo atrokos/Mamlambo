@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Union, Any
 
 from mamlambo.Database import Database
 from mamlambo.Enums.enums import Action
@@ -15,15 +15,13 @@ class DatabaseView[T]:
     It also employs reactive programming, as classes that depend on the database's data
     can add their own callback that is called every time the database changes state.
     """
-
-    def __init__(self, sort_key, reverse_sort):
+    def __init__(self, sort_key: Callable[[T], Any], reverse_sort: bool):
         """
         Initialize the DatabaseView with sorting and filtering capabilities.
 
         :param sort_key: The key function to sort the database entries.
         :param reverse_sort: Boolean indicating whether to sort in reverse order.
         """
-        super().__init__()
         self._view: list[int] = []
         self._database = Database[T]()
         self._subscribers: list[Callable[[], None]] = []
@@ -49,7 +47,7 @@ class DatabaseView[T]:
 
         return [self._database[i] for i in self._view[item]]
 
-    def sort_by(self, /, sort_key=None, reverse=None, filters=None) -> None:
+    def sort_by(self, /, sort_key: Callable = None, reverse: bool = None, filters: list[Callable] = None) -> None:
         """
         Sorts the entries in the database according to the given arguments.
         If any of the arguments is left out, the previously used one will be used.
@@ -94,7 +92,7 @@ class DatabaseView[T]:
         self._database.dump(filename, delimiter)
         self._saved = True
 
-    def load(self, filename: Path | str, line_parser: Callable[[list[str]], T], /, delimiter=","):
+    def load(self, filename: Path | str, line_parser: Callable[[list[str]], T], /, delimiter=",") -> None:
         """
         Load transactions from a file into the database and sort them.
 
@@ -108,7 +106,7 @@ class DatabaseView[T]:
         self._saved = True
         self.sort_by()
 
-    def commit(self):
+    def commit(self) -> None:
         """
         Process all pending commits to the database and update the view.
 
@@ -119,7 +117,7 @@ class DatabaseView[T]:
         self._saved = False
         self.sort_by()
 
-    def revert(self):
+    def revert(self) -> None:
         """
         Revert the last commit in the database and update the view.
 
@@ -130,7 +128,7 @@ class DatabaseView[T]:
         self._saved = False
         self.sort_by()
 
-    def add(self, transaction):
+    def add(self, transaction) -> None:
         """
         Schedule a transaction to be added to the database and notify subscribers.
 
@@ -142,7 +140,7 @@ class DatabaseView[T]:
             self._prev_action = Action.PUSH
             self._call_all()
 
-    def remove(self, index):
+    def remove(self, index) -> None:
         """
         Schedule a transaction to be removed from the database by index and notify subscribers.
 
@@ -156,7 +154,7 @@ class DatabaseView[T]:
             self._prev_action = Action.PUSH
             self._call_all()
 
-    def edit(self, index, transaction):
+    def edit(self, index, transaction) -> None:
         """
         Schedule a transaction to be updated in the database by index and notify subscribers.
 
@@ -171,7 +169,7 @@ class DatabaseView[T]:
             self._prev_action = Action.PUSH
             self._call_all()
 
-    def subscribe(self, callback: Callable[[], None]):
+    def subscribe(self, callback: Callable[[], None]) -> None:
         """
         Subscribe a callback to be called whenever the database changes state.
 
@@ -198,7 +196,7 @@ class DatabaseView[T]:
         """
         return len(self._database.get_commits()) == 0
 
-    def can_revert(self):
+    def can_revert(self) -> bool:
         """
         Check if there is a commit to revert.
 
@@ -206,7 +204,7 @@ class DatabaseView[T]:
         """
         return len(self._database.get_history()) > 0
 
-    def _call_all(self):
+    def _call_all(self) -> None:
         """Call all subscriber callbacks to notify them of a state change."""
         for callback in self._subscribers:
             callback()
