@@ -139,7 +139,7 @@ class TransactionWindow(tk.Toplevel):
         self._values = None
         self.destroy()
 
-    def _update_template(self):
+    def _update_template(self, event=None):
         """
         Update the input fields with the selected template data.
         """

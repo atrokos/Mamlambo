@@ -57,6 +57,10 @@ class Transaction:
     @staticmethod
     def validate_date(d: str):
         try:
+            curr_date = date.today().isoformat().split("-")
+            d = d.replace("YYYY", curr_date[0]
+                             ).replace("MM", curr_date[1]
+                             ).replace("DD", curr_date[2])
             return date.fromisoformat(d)
         except:
             raise ValueError("Incorrect date format. The format is\nYYYY-MM-DD")

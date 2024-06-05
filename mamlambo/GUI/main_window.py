@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog as fd
 import tkinter.messagebox as mb
 from pathlib import Path
+import json
 
 from mamlambo.Database import DatabaseView
 from mamlambo.GUI.Windows import AboutWindow, TransactionWindow, FiltersWindow, StatisticsWindow
@@ -22,22 +23,14 @@ class MainWindow(tk.Tk):
         self._right_btn_row = None
         self.trns_pages: TransactionPagesFrame | None = None
         self._database: DatabaseView | None = None
-        self.templates = {
-            "Test": {
-                "Date": "2024-05-31",
-                "Title": "Test",
-                "Group": "Test",
-                "Amount": "-256",
-                "Currency": "CZK",
-                "Description": "Test"
-            }
-        }
+        self.templates = dict()
         self.protocol("WM_DELETE_WINDOW", self.exit_app)
 
         self._setup_menu()
         self._setup_button_row()
         self._setup_transaction_view()
         self.update_buttons()
+        self._load_config("./data/config.json")
 
     def _setup_menu(self):
         """Set up the main menu of the application."""
@@ -153,6 +146,7 @@ class MainWindow(tk.Tk):
             return
         try:
             self._database.dump(Path(filename))
+            self._save_config("./data/config.json")
         except ValueError as e:
             mb.showerror("Unsupported file type", str(e))
 
@@ -244,3 +238,22 @@ class MainWindow(tk.Tk):
             self._right_btn_row["commit"]["state"] = "normal"
         else:
             self._right_btn_row["commit"]["state"] = "disable"
+
+    def _load_config(self, filename):
+        with open(filename, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        self.templates = config["templates"]
+        self.conversions = config["conversions"]
+
+    def _save_config(self, filename):
+        config = {
+            "conversions": self.conversions,
+            "templates": self.templates
+        }
+
+        try:
+            with open(filename, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=4)
+        except IOError as e:
+            mb.showerror("Error", f"Could not save the configuration:\n{str(e)}")

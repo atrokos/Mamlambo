@@ -1,4 +1,23 @@
 {
-  "delimiter": ",",
-  "templates": []
+  "conversions": [
+
+  ],
+  "templates": {
+    "Test": {
+      "Date": "2024-05-31",
+      "Title": "Test",
+      "Group": "Test",
+      "Amount": "-256",
+      "Currency": "CZK",
+      "Description": "Test"
+    },
+    "Work income": {
+      "Date": "2024-MM-15",
+      "Title": "Work pay",
+      "Group": "incomes::work",
+      "Amount": "45000",
+      "Currency": "CZK",
+      "Description": ""
+    }
+  }
 }
