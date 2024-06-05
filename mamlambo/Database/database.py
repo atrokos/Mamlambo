@@ -35,7 +35,7 @@ class Database[T]:
         :param line_parser: Parses the CSV to the database representation.
         :param delimiter: The delimiter used in the CSV file.
         """
-        if str.split(".")[-1] != "csv":
+        if filename.split(".")[-1] != "csv":
             raise ValueError("Only CSV files are supported.")
 
         # In case we load an already loaded database
