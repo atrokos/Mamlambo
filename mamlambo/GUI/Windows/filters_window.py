@@ -8,14 +8,20 @@ from mamlambo.Transactions.group import Group
 
 
 class FiltersWindow(tk.Toplevel):
+    """A window where the user can apply and define their own filters."""
+    
     def __init__(self, master):
         super().__init__(master)
         self.columnconfigure(1, weight=1)
         self._filter_data = dict()
         self._last_row = 0
-        self._id_counter = 0
+        self._id_counter = 0  # Counter for the Filters' IDs.
         self._result = None
         self._setup_buttons()
+        
+    def get_results(self) -> list[Callable[[Transaction], bool]]:
+        """Returns the list of created filters."""
+        return self._result
 
     def _setup_buttons(self):
         ttk.Button(self, text="Add filter", command=self._new_filter
@@ -32,10 +38,8 @@ class FiltersWindow(tk.Toplevel):
         self._id_counter += 1
         return self._id_counter
 
-    def get_results(self) -> list[Callable[[Transaction], bool]]:
-        return self._result
-
     def _delete_filter(self, filter_id):
+        """Remove the selected filter. If there is only one left, do not delete it."""
         if len(self._filter_data) <= 1:
             return
 
@@ -47,6 +51,7 @@ class FiltersWindow(tk.Toplevel):
         self._filter_data.pop(filter_id)
 
     def _new_filter(self):
+        """Add a new filter to the bottom, giving it its ID and variables."""
         row = self._next_row()
         filter_id = self._next_id()
 
@@ -66,6 +71,7 @@ class FiltersWindow(tk.Toplevel):
         }
 
     def _confirm(self):
+        """User clicked on confirm -> check that all filters are in a valid state and close the window."""
         try:
             self._result = self._retrieve_filters()
             self.destroy()
@@ -74,6 +80,11 @@ class FiltersWindow(tk.Toplevel):
             self._result = None
 
     def _retrieve_filters(self):
+        """
+        Only retrieve filters with a selected property (nonempty Combobox) and check that their
+        Entry box has valid values.
+        """
+        
         # Get filters with set property
         valid_filters = [fil for fil in self._filter_data.values() if fil["Combobox"].get() != ""]
         result = []
@@ -135,9 +146,3 @@ class FiltersWindow(tk.Toplevel):
                 return lambda x: getter(x) != parsed_value
             case _:
                 raise ValueError(f"Unknown comparator: {comp}")
-
-
-if __name__ == "__main__":
-    app = tk.Tk()
-    FiltersWindow(app)
-    app.mainloop()
