@@ -1,3 +1,4 @@
+import datetime
 import tkinter as tk
 from tkinter import ttk
 import math
@@ -20,6 +21,7 @@ def unzip(l: list):
 
 
 class StatisticsWindow(tk.Toplevel):
+    """Renders the statistics window."""
     def __init__(self, master, database: DatabaseView):
         super().__init__(master)
         self.title("Statistics")
@@ -34,10 +36,12 @@ class StatisticsWindow(tk.Toplevel):
         self.plot_pies(group_data["incomes"], group_data["expenses"])
 
     def plot_line(self, time_data, currency: str):
-        fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-        fig.set_facecolor("#f0f0f0")
         dates = time_data["dates"]
         totals = time_data["totals"]
+
+        fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+        fig.set_facecolor("#f0f0f0")
+
         ax1.set_title("Balance over time")
         ax1.set_xlabel("Date")
         ax1.set_ylabel(f"Balance [{currency}]")
@@ -46,6 +50,7 @@ class StatisticsWindow(tk.Toplevel):
         ax1.tick_params(axis='x', labelrotation=70)
         fig.tight_layout()
 
+        # Embed the figure as a Tkinter widget
         canvas = FigureCanvasTkAgg(fig, master=self)
         canvas.draw()
         canvas.get_tk_widget().grid(row=2, column=0)
@@ -77,7 +82,7 @@ class StatisticsWindow(tk.Toplevel):
     def _prepare_data(self, database: DatabaseView):
         """Runs through the data, collecting needed statistics from it."""
         data, group_data = self._init_dicts()
-        totals_dates = []  # For tuples (total_balance, date)
+        dates_totals: list[tuple[datetime.date, float]] = []
         total_balance = 0
 
         for i in range(len(database)):
@@ -104,12 +109,12 @@ class StatisticsWindow(tk.Toplevel):
                 data["currency"] = curr_transaction.currency
 
             total_balance += amount
-            totals_dates.append((curr_transaction.date, total_balance))
+            dates_totals.append((curr_transaction.date, total_balance))
 
         if len(database) != 0:
             data["avg"] = total_balance / len(database)
 
-        time_data = self._get_time_data(totals_dates)  # Convert the data in time to the required representation
+        time_data = self._get_time_data(dates_totals)  # Convert the data in time to the required representation
 
         return data, group_data, time_data
 
@@ -130,7 +135,8 @@ class StatisticsWindow(tk.Toplevel):
         return data, group_data
 
     @staticmethod
-    def _get_time_data(totals_dates):
+    def _get_time_data(totals_dates: list[tuple[datetime.date, float]]):
+        # Converts the list of tuples to a dictionary
         time_data = {
             "totals": [],
             "dates": []
@@ -143,6 +149,7 @@ class StatisticsWindow(tk.Toplevel):
 
     @staticmethod
     def prepare_pie_data(data: Counter, n=4):
+        # Selects up to `n` largest groups from the data, putting the rest in a category called "Rest"
         rest_sum = None
 
         if len(data) > n:
@@ -175,14 +182,16 @@ class StatisticsDataFrame(tk.Frame):
         self._create_stats_labels("Minimum amount:", self.data['min'][0], currency, self.data['min'][1])
         self._create_stats_labels("Average amount:", self.data['avg'], currency)
 
-    def _create_stats_labels(self, stat_type: str, amount, currency, title=None):
+    def _create_stats_labels(self, stat_type: str, amount: float, currency: str, title: str = None):
         """
         Creates multiple labels in the format
         <Stat_type> <Amount> <Currency> [Title]
         """
+        currency_text = "{:.2f} {}".format(amount, currency)
+
         ttk.Label(self, text=stat_type, font="bold"
                   ).grid(row=self._new_row(), column=0, sticky="nsw", padx=5, pady=(5, 10))
-        ttk.Label(self, text=f"{amount} {currency}", font="bold"
+        ttk.Label(self, text=currency_text, font="bold"
                   ).grid(row=self._curr_row(), column=1, sticky="nsw", padx=5, pady=(5, 10))
         if title is not None:
             ttk.Label(self, text=title, font="bold"

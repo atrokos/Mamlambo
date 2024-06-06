@@ -26,13 +26,35 @@ class MainWindow(tk.Tk):
         self._database: DatabaseView | None = None
         self._conversions = []
         self._templates = dict()
-        self.protocol("WM_DELETE_WINDOW", self.exit_app)
+        self.protocol("WM_DELETE_WINDOW", self._exit_app)
 
         self._setup_menubar()
         self._setup_button_row()
         self._setup_transaction_view()
         self._update_buttons()
         self._load_config("./data/config.json")
+
+    def _setup_button_row(self):
+        """Set up the row of buttons in the main window."""
+        self._left_btn_row = ButtonRowFrame(self)
+        self._left_btn_row.grid(row=0, column=0, sticky='nsw')
+
+        self._left_btn_row.add_button("Add", command=self._add_trn_comm)
+        self._left_btn_row.add_button("Edit", command=self._edit_trn_comm)
+        self._left_btn_row.add_button("Remove", command=self._remove_trn_comm)
+        self._left_btn_row.add_button("Filter", command=self._filter_comm)
+        self._left_btn_row.disable_all()
+
+        self._right_btn_row = ButtonRowFrame(self)
+        self._right_btn_row.grid(row=0, column=1, sticky="nse")
+
+        self._right_btn_row.add_button("Revert", command=self._revert_comm)
+        self._right_btn_row.add_button("Commit", command=self._commit_comm)
+
+    def _setup_transaction_view(self):
+        """Set up the transaction pages view in the main window."""
+        self.trns_pages = TransactionPagesFrame(self, None)
+        self.trns_pages.grid(row=1, column=0, columnspan=2, pady=(5, 0), sticky='nsew')
 
     def _new_session(self):
         """Create a new database session."""
@@ -90,7 +112,7 @@ class MainWindow(tk.Tk):
         except IOError as e:
             mb.showerror("Database error", f"Could not save the database:\n{str(e)}")
 
-    def exit_app(self):
+    def _exit_app(self):
         """Handle the application exit event."""
         answer = self._check_saved_committed()
         if answer:
@@ -134,7 +156,7 @@ class MainWindow(tk.Tk):
         file_menu.add_command(label='New', command=self._new_session)
         file_menu.add_command(label="Open", command=self._open_session)
         file_menu.add_command(label="Save", command=self._save_session)
-        file_menu.add_command(label='Exit', command=self.exit_app)
+        file_menu.add_command(label='Exit', command=self._exit_app)
 
         # "Tools" option
         tools_menu = tk.Menu(menubar, tearoff=0)
@@ -149,28 +171,6 @@ class MainWindow(tk.Tk):
         menubar.add_cascade(label='Tools', menu=tools_menu)
         menubar.add_cascade(label='Help', menu=help_menu)
         self.config(menu=menubar)  # Set the menubar for the main window
-
-    def _setup_button_row(self):
-        """Set up the row of buttons in the main window."""
-        self._left_btn_row = ButtonRowFrame(self)
-        self._left_btn_row.grid(row=0, column=0, sticky='nsw')
-
-        self._left_btn_row.add_button("Add", command=self._add_trn_comm)
-        self._left_btn_row.add_button("Edit", command=self._edit_trn_comm)
-        self._left_btn_row.add_button("Remove", command=self._remove_trn_comm)
-        self._left_btn_row.add_button("Filter", command=self._filter_comm)
-        self._left_btn_row.disable_all()
-
-        self._right_btn_row = ButtonRowFrame(self)
-        self._right_btn_row.grid(row=0, column=1, sticky="nse")
-
-        self._right_btn_row.add_button("Revert", command=self._revert_comm)
-        self._right_btn_row.add_button("Commit", command=self._commit_comm)
-
-    def _setup_transaction_view(self):
-        """Set up the transaction pages view in the main window."""
-        self.trns_pages = TransactionPagesFrame(self, None)
-        self.trns_pages.grid(row=1, column=0, columnspan=2, pady=(5, 0), sticky='nsew')
 
     def _add_trn_comm(self):
         """Open the transaction window to add a new transaction."""
