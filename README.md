@@ -62,9 +62,9 @@ A single transaction consists of the following fields:
    - Enter `> 50` in the field next to it.
 
 ### Ordering Transactions
-1. Click on any of the column names to order by that property.
-2. Click again to toggle between ascending and descending order.
-3. Ordering by transaction's description is not supported.
+- Click on any of the column names to order by that property.
+- Click again to toggle between ascending and descending order.
+- Ordering by transaction's description is not supported.
 
 ### Committing Changes
 After adding, editing, or removing transactions, changes must be committed. Press the `Commit` button to save changes.
@@ -75,7 +75,7 @@ After committing, you can revert up to the last 10 commits by pressing the `Reve
 ### Statistics
 Mamlambo supports statistics for data with the same currency. Ensure that the data is filtered by a single currency before generating statistics.
 1. Apply a filter for a single currency.
-2. To access statistics, click on `Tools` in the menu.
+2. Click on `Tools` in the menu.
 3. Select `Statistics`.
 
 ## Saving the database
