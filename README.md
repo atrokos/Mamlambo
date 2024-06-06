@@ -72,6 +72,12 @@ After adding, editing, or removing transactions, changes must be committed. Pres
 ### Reverting Changes
 After committing, you can revert up to the last 10 commits by pressing the `Revert` button.
 
+### Converting currencies
+You can add your own currency conversions, simply add them in the `config.json` file. User added conversions
+work both ways, so only one definition is sufficient. To convert between currencies:
+1. Click on `Tools` in the menu.
+2. Select `Convert currency`.
+
 ### Statistics
 Mamlambo supports statistics for data with the same currency. Ensure that the data is filtered by a single currency before generating statistics.
 1. Apply a filter for a single currency.

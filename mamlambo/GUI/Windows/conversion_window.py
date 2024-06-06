@@ -6,6 +6,8 @@ from mamlambo.Transactions.converter import Converter
 
 
 class ConversionWindow(tk.Toplevel):
+    """A window where the user can convert between defined currencies."""
+    
     def __init__(self, master, conversions: list[dict[str, Any]]):
         super().__init__(master)
         self.title("Currency conversion")
@@ -24,10 +26,12 @@ class ConversionWindow(tk.Toplevel):
         self._setup_entries_button()
 
     def _update_to_box(self, event=None) -> None:
+        """When a `From` currency was selected, update the available `To` currencies."""
         avail_values = self._converter.get_available_conversions(self._from_box.get())
         self._to_box["values"] = avail_values
 
     def _convert(self) -> None:
+        """Show the converted value after clicking on the `Convert` button."""
         amount = self._amount_var.get()
         try:
             amount_float = float(amount)
